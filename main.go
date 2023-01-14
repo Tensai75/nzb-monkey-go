@@ -167,6 +167,12 @@ func processFoundNzb(nzb *Result) {
 // cmd window will stay open for the configured time if the program was startet outside a cmd window
 func exit(exitCode int) {
 
+	if conf.General.Success_wait_time == 0 {
+		conf.General.Success_wait_time = 3
+	}
+	if conf.General.Error_wait_time == 0 {
+		conf.General.Error_wait_time = 10
+	}
 	wait_time := int(math.Abs(float64(conf.General.Success_wait_time)))
 	if exitCode > 0 {
 		wait_time = int(math.Abs(float64(conf.General.Error_wait_time)))
