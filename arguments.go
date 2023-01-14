@@ -121,6 +121,7 @@ func checkArguments() {
 			}
 		} else if match := dateRegexTimestamp.FindStringIndex(args.Date); match != nil {
 			args.UnixDate, parseError = strconv.ParseInt(args.Date, 10, 64)
+			args.UnixDate += (60 * 60) // add 1 hour buffer
 			args.IsTimestamp = true
 		} else {
 			parseError = fmt.Errorf("ERROR")
