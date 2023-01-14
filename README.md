@@ -31,3 +31,17 @@ Please also note that the macOS binary is neither signed nor executable.
 ## Contribution
 
 Feel free to send pull requests.
+
+## Change log
+
+#### v0.1.0-beta2
+- Waiting time before exiting the programme is now configurable
+- directsearch: Change of the configurable time span for the search backwards from days to hours.
+
+  If the parameter date is specified as Unix timestamp, the search starts from date minus the configured number of hours and goes up to date plus 1 hour (as buffer).
+  If the parameter date is specified as DD.MM.YYYY, the search will cover the whole day plus the configured number of hours of the previous day.
+
+- Bug fixes and elimination of race conditions
+
+#### v0.1.0-beta1
+- first public release
