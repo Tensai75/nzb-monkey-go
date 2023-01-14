@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"sort"
@@ -163,8 +164,13 @@ func processFoundNzb(nzb *Result) {
 }
 
 // always use exit function to terminate
-// cmd window will stay open for 10 seconds if the program was startet outside a cmd window
-func exit(error int) {
+// cmd window will stay open for the confugured time if the program was startet outside a cmd window
+func exit(exitCode int) {
+
+	wait_time := int(math.Abs(float64(conf.General.Success_wait_time)))
+	if exitCode > 0 {
+		wait_time = int(math.Abs(float64(conf.General.Error_wait_time)))
+	}
 
 	// clean up
 	if logFile != nil {
@@ -173,13 +179,15 @@ func exit(error int) {
 
 	// pause before ending the program
 	fmt.Println()
-	fmt.Print("   Ending program in 10 seconds ")
-	for range [10]struct{}{} {
-		fmt.Print(".")
-		time.Sleep(1 * time.Second)
+	for i := wait_time; i >= 0; i-- {
+		fmt.Print("\033[G\033[K") // move the cursor left and clear the line
+		fmt.Printf("   Ending program in %d seconds %s", i, strings.Repeat(".", wait_time-i))
+		if i > 0 {
+			time.Sleep(1 * time.Second)
+		}
 	}
 	fmt.Println()
 	fmt.Println()
-	os.Exit(error)
+	os.Exit(exitCode)
 
 }

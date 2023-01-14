@@ -11,8 +11,10 @@ import (
 // configuration structure
 type Configuration struct {
 	General struct {
-		Target     string `ini:"target"`
-		Categorize string `ini:"categorize"`
+		Target            string `ini:"target"`
+		Categorize        string `ini:"categorize"`
+		Success_wait_time int    `ini:"success_wait_time"`
+		Error_wait_time   int    `ini:"error_wait_time"`
 	} `ini:"GENERAL"`
 	Execute struct {
 		Passtofile       bool   `ini:"passtofile"`

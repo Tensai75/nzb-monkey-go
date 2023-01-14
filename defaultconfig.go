@@ -9,6 +9,10 @@ func defaultConfig() string {
 target = "EXECUTE"
 # Let the monkey choose a category. Values are: off, auto, manual
 categorize = "off"
+# seconds to wait befor ending/closing the window after success
+success_wait_time = 3
+# seconds to wait befor ending/closing the window after an error
+error_wait_time = 10
 
 [EXECUTE]
 # Extend password to filename {{password}}
