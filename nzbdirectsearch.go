@@ -238,6 +238,10 @@ func scanForDate(conn *nntp.Conn, firstMessageID int, lastMessageID int, interva
 		progressbar.OptionSetRenderBlankState(true),
 		progressbar.OptionThrottle(time.Millisecond*100),
 	)
+	defer func() {
+		bar.Finish()
+		fmt.Println()
+	}()
 	currentMessageID := firstMessageID
 	endMessageID := lastMessageID
 	scanStep := endMessageID - currentMessageID
@@ -254,8 +258,6 @@ func scanForDate(conn *nntp.Conn, firstMessageID int, lastMessageID int, interva
 			for _, overview := range results {
 				bar.Add(1)
 				if overview.Date.Unix() > args.UnixDate+int64(interval) {
-					bar.Finish()
-					fmt.Println()
 					return overview.MessageNumber, overview.Date, nil
 				}
 			}
