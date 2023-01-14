@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"fmt"
 	"net/url"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -16,16 +15,17 @@ import (
 
 // arguments structure
 type Args struct {
-	Nzblnk   string   `arg:"positional" help:"a qualified NZBLNK URI (nzblnk://?h=...)"`
-	Header   string   `arg:"-s,--subject" help:"the header/subject to search for"`
-	Title    string   `arg:"-t,--title" help:"the title/tag for the NZB file"`
-	Password string   `arg:"-p,--password" help:"the password to extract the download"`
-	Groups   []string `arg:"-g,--group" help:"the group(s) to search in (several groups seperated with space)"`
-	Date     string   `arg:"-d,--date" help:"the date the upload was posted to Usenet (either in the format DD.MM.YYYY or as a Unix timestamp)"`
-	Category string   `arg:"-c,--category" help:"the category to use for the target (if supportet by the target)"`
-	UnixDate int64    `arg:"-"` // will hold the parsed Unix timestamp
-	Config   string   `arg:"--config" help:"path to the config file"`
-	Debug    bool     `arg:"--debug" help:"logs output to log file"`
+	Nzblnk      string   `arg:"positional" help:"a qualified NZBLNK URI (nzblnk://?h=...)"`
+	Header      string   `arg:"-s,--subject" help:"the header/subject to search for"`
+	Title       string   `arg:"-t,--title" help:"the title/tag for the NZB file"`
+	Password    string   `arg:"-p,--password" help:"the password to extract the download"`
+	Groups      []string `arg:"-g,--group" help:"the group(s) to search in (several groups seperated with space)"`
+	Date        string   `arg:"-d,--date" help:"the date the upload was posted to Usenet (either in the format DD.MM.YYYY or as a Unix timestamp)"`
+	Category    string   `arg:"-c,--category" help:"the category to use for the target (if supportet by the target)"`
+	UnixDate    int64    `arg:"-"` // will hold the parsed Unix timestamp
+	IsTimestamp bool     `arg:"-"` // will indicate if exact timestamp was passed as date
+	Config      string   `arg:"--config" help:"path to the config file"`
+	Debug       bool     `arg:"--debug" help:"logs output to log file"`
 }
 
 // version information
@@ -58,10 +58,10 @@ func parseArguments() {
 		if err.Error() == "help requested by user" {
 			writeHelp(argParser)
 			fmt.Println(args.Epilogue())
-			os.Exit(0)
+			exit(0)
 		} else if err.Error() == "version requested by user" {
 			fmt.Println(args.Version())
-			os.Exit(0)
+			exit(0)
 		}
 		writeUsage(argParser)
 		Log.Error(err.Error())
@@ -120,10 +120,10 @@ func checkArguments() {
 				args.UnixDate = date.Unix() + (60 * 60 * 23) - 1 // add a day minus 1 sec so it is 23:59:59
 			}
 		} else if match := dateRegexTimestamp.FindStringIndex(args.Date); match != nil {
-			var date int64
-			date, parseError = strconv.ParseInt(args.Date, 10, 64)
-			t := time.Unix(date, 0)
-			args.UnixDate = time.Date(t.Year(), t.Month(), t.Day(), 23, 59, 59, 0, t.Location()).Unix()
+			args.UnixDate, parseError = strconv.ParseInt(args.Date, 10, 64)
+			args.IsTimestamp = true
+		} else {
+			parseError = fmt.Errorf("ERROR")
 		}
 		if parseError != nil || args.UnixDate == 0 {
 			if isNzblnk {

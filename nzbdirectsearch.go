@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/Tensai75/nntp"
@@ -21,7 +22,8 @@ import (
 )
 
 var directsearchHits = make(map[string]map[string]nzbparser.NzbFile)
-var directsearchCounter int
+var directsearchCounter uint64
+var mutex = sync.Mutex{}
 
 func nzbdirectsearch(engine SearchEngine) (*nzbparser.Nzb, error) {
 
@@ -37,8 +39,8 @@ func nzbdirectsearch(engine SearchEngine) (*nzbparser.Nzb, error) {
 	if conf.Directsearch.Connections == 0 {
 		conf.Directsearch.Connections = 20
 	}
-	if conf.Directsearch.Days == 0 {
-		conf.Directsearch.Days = 2
+	if conf.Directsearch.Hours == 0 {
+		conf.Directsearch.Hours = 12
 	}
 	if conf.Directsearch.Scans == 0 {
 		conf.Directsearch.Scans = 50
@@ -84,20 +86,25 @@ func searchInGroup(group string) error {
 	var searchesCtx, searchesCancel = context.WithCancel(context.Background())
 	defer searchesCancel() // Make sure it's called to release resources even if no errors
 	var step = conf.Directsearch.Step
+	var interval = conf.Directsearch.Hours * 60 * 60
+	if !args.IsTimestamp {
+		interval += 60 * 60 * 24
+	}
 	var currentMessageID int
 	conn, firstMessageID, lastMessageID, err := switchToGroup(group)
 	if err != nil {
 		return err
 	}
-	lastMessageID, _, err = scanForDate(conn, firstMessageID, lastMessageID, 0, false, "   Scanning for start date ...")
-	if err != nil {
-		DisconnectNNTP(conn)
-		return fmt.Errorf("Error while scanning group '%s' for the last message: %v\n", group, err)
-	}
-	currentMessageID, _, err = scanForDate(conn, firstMessageID, lastMessageID, -1*conf.Directsearch.Days*60*60*24, true, "   Scanning for end date ...  ")
+	Log.Info("Scanning from %s to %s", time.Unix(args.UnixDate-int64(interval), 0).Format("02.01.2006 15:04:05"), time.Unix(args.UnixDate, 0).Format("02.01.2006 15:04:05"))
+	currentMessageID, _, err = scanForDate(conn, firstMessageID, lastMessageID, -interval, true, "   Scanning for first message ID ...")
 	if err != nil {
 		DisconnectNNTP(conn)
 		return fmt.Errorf("Error while scanning group '%s' for the first message: %v\n", group, err)
+	}
+	lastMessageID, _, err = scanForDate(conn, firstMessageID, lastMessageID, 0, false, "   Scanning for last message ID ... ")
+	if err != nil {
+		DisconnectNNTP(conn)
+		return fmt.Errorf("Error while scanning group '%s' for the last message: %v\n", group, err)
 	}
 	if currentMessageID >= lastMessageID {
 		DisconnectNNTP(conn)
@@ -105,8 +112,9 @@ func searchInGroup(group string) error {
 	}
 	DisconnectNNTP(conn)
 	bar := progressbar.NewOptions(lastMessageID-currentMessageID,
-		progressbar.OptionSetDescription("   Scanning messages ...      "),
+		progressbar.OptionSetDescription("   Scanning messages ...            "),
 		progressbar.OptionSetRenderBlankState(true),
+		progressbar.OptionThrottle(time.Duration(1000)),
 	)
 	for currentMessageID <= lastMessageID {
 		var lastMessage int
@@ -115,39 +123,41 @@ func searchInGroup(group string) error {
 		} else {
 			lastMessage = currentMessageID + step
 		}
-		go func(ctx context.Context, currentMessageID int, lastMessage int, group string, bar *progressbar.ProgressBar) {
-			searchesWG.Add(1)
-			defer searchesWG.Done()
-			searchesGuard <- struct{}{} // will block if guard channel is already filled
-			defer func() { <-searchesGuard }()
-			if err := searchMessages(ctx, currentMessageID, lastMessage, group, bar); err != nil {
+		searchesGuard <- struct{}{} // will block if guard channel is already filled
+		searchesWG.Add(1)
+		go func(ctx context.Context, currentMessageID int, lastMessage int, group string) {
+			defer func() {
+				searchesWG.Done()
+				<-searchesGuard
+			}()
+			if err := searchMessages(ctx, currentMessageID, lastMessage, group); err != nil {
 				searchesErrorChannel <- err
 				searchesCancel()
 			}
-		}(searchesCtx, currentMessageID, lastMessage, group, bar)
+		}(searchesCtx, currentMessageID, lastMessage, group)
 		// update currentMessageID for next request
 		currentMessageID = lastMessage + 1
 	}
-	barRunner := true
-	go func(barRunner *bool) {
+	var barRunner atomic.Value
+	barRunner.Store(true)
+	go func() {
 		searchesWG.Wait()
-		*barRunner = false
-	}(&barRunner)
-	for barRunner {
-		time.Sleep(100 * time.Millisecond)
-		bar.Set(directsearchCounter)
+		barRunner.Store(false)
+	}()
+	for barRunner.Load() == true {
+		bar.Set(int(atomic.LoadUint64(&directsearchCounter)))
 	}
 	bar.Finish()
 	fmt.Println()
 	select {
-	case <-searchesErrorChannel:
+	case err := <-searchesErrorChannel:
 		return err
 	default:
 		return nil
 	}
 }
 
-func searchMessages(ctx context.Context, firstMessage int, lastMessage int, group string, bar *progressbar.ProgressBar) error {
+func searchMessages(ctx context.Context, firstMessage int, lastMessage int, group string) error {
 	select {
 	case <-ctx.Done():
 		return nil // Error somewhere, terminate
@@ -196,6 +206,7 @@ func searchMessages(ctx context.Context, firstMessage int, lastMessage int, grou
 				// make hashes
 				headerHash := GetMD5Hash(subject.Header + poster + strconv.Itoa(subject.TotalFiles))
 				fileHash := GetMD5Hash(headerHash + subject.Filename + strconv.Itoa(subject.TotalSegments))
+				mutex.Lock()
 				if _, ok := directsearchHits[headerHash]; !ok {
 					directsearchHits[headerHash] = make(map[string]nzbparser.NzbFile)
 				}
@@ -225,9 +236,10 @@ func searchMessages(ctx context.Context, firstMessage int, lastMessage int, grou
 					Bytes:  overview.Bytes,
 				})
 				directsearchHits[headerHash][fileHash] = file
+				mutex.Unlock()
 			}
 		}
-		directsearchCounter += 1
+		atomic.AddUint64(&directsearchCounter, 1)
 	}
 	return nil
 }

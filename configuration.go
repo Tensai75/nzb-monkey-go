@@ -70,7 +70,7 @@ type Configuration struct {
 		Username    string `ini:"username"`
 		Password    string `ini:"password"`
 		Connections int    `ini:"connections"`
-		Days        int    `ini:"days"`
+		Hours       int    `ini:"hours"`
 		Step        int    `ini:"step"`
 		Scans       int    `ini:"scans"`
 	} `ini:"DIRECTSEARCH"`
