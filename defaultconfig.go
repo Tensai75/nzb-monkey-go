@@ -84,9 +84,9 @@ basepath = ""
 # Don't skip failed nzb
 skip_failed = true
 # Max missing failed segments
-max_missing_segments_percent = 2
+max_missing_segments_percent = 1
 # Max missing failed files
-max_missing_files = 2
+max_missing_files = 1
 # Use always all Searchengines to find the best NZB
 best_nzb = true
 
