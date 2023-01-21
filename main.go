@@ -30,6 +30,7 @@ var (
 	appExec    string
 	appPath    string
 	confFile   = "config.txt"
+	results    = make([]Result, 0)
 )
 
 func init() {
@@ -78,12 +79,10 @@ func main() {
 		Log.Info("Category: %s%s%s", color.Blue, args.Category, color.Reset)
 	}
 
-	var results []Result
-
 	for _, name := range conf.Searchengines {
 		fmt.Println()
 		Log.Info("Searching on %s ...", searchEngines[name].name)
-		if nzb, err := searchEngines[name].search(searchEngines[name]); err == nil {
+		if nzb, err := searchEngines[name].search(searchEngines[name]); nzb != nil {
 			result := Result{
 				SearchEngine:     name,
 				Nzb:              nzb,
@@ -115,7 +114,7 @@ func main() {
 					results = append(results, result)
 				}
 			}
-		} else {
+		} else if err != nil {
 			Log.Warn(err.Error())
 		}
 	}

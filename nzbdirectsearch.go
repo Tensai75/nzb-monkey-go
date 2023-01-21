@@ -27,6 +27,11 @@ var mutex = sync.Mutex{}
 
 func nzbdirectsearch(engine SearchEngine) (*nzbparser.Nzb, error) {
 
+	if len(results) > 0 && conf.Directsearch.Skip {
+		Log.Info("Results already available. Skipping search based on config settings.")
+		return nil, nil
+	}
+
 	if conf.Directsearch.Username == "" || conf.Directsearch.Password == "" {
 		return nil, fmt.Errorf("No or incomplete credentials for usenet server")
 	}

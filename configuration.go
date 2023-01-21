@@ -73,6 +73,7 @@ type Configuration struct {
 		Hours       int    `ini:"hours"`
 		Step        int    `ini:"step"`
 		Scans       int    `ini:"scans"`
+		Skip        bool   `ini:"skip"`
 	} `ini:"DIRECTSEARCH"`
 }
 

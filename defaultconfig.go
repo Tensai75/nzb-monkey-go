@@ -130,6 +130,8 @@ hours = 12
 # Number of parallel scans (default = 50)
 scans = 50
 # Number of articles to load per scan (default = 20000)
-Step = 20000   
+step = 20000
+# Skip direct search when using best_nzb and a good NZB file has already been found
+skip = true
 `, "\n")
 }
