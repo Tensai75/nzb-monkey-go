@@ -94,7 +94,10 @@ func loadConfig() {
 		configFile = filepath.Join(appPath, confFile)
 	}
 
-	cfg, err := ini.Load(configFile)
+	iniOption := ini.LoadOptions{
+		IgnoreInlineComment: true,
+	}
+	cfg, err := ini.LoadSources(iniOption, configFile)
 	if err != nil {
 		Log.Error("Unable to load configuration file '%s': %s", configFile, err.Error())
 		exit(1)

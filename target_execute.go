@@ -20,7 +20,7 @@ func execute_push(nzb string, category string) error {
 	var path string
 	var err error
 
-	if path, err = filepath.Abs(filepath.Clean(conf.Execute.Nzbsavepath)); err != nil {
+	if path, err = filepath.Abs(conf.Execute.Nzbsavepath); err != nil {
 		return err
 	}
 
