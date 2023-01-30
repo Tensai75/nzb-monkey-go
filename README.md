@@ -34,6 +34,12 @@ Feel free to send pull requests.
 
 ## Change log
 
+#### v0.1.0-beta3
+- directsearch: new configuration parameter "skip" (default true). If set to true directsearch is skipped if a valid NZB file was already found.
+- Fix for the message scan getting stuck on errors.
+- Fix for incorrect parsing of the configuration file for values containing a "#" character.
+- Reduced default threshold for missing files and segments.
+
 #### v0.1.0-beta2
 - Waiting time before exiting the programme is now configurable
 - directsearch: Change of the configurable time span for the search backwards from days to hours.
