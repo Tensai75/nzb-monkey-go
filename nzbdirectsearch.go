@@ -86,7 +86,7 @@ func searchInGroup(group string) error {
 	var searchesWG sync.WaitGroup
 	var searchesGuard = make(chan struct{}, conf.Directsearch.Scans)
 	defer close(searchesGuard)
-	var searchesErrorChannel = make(chan error)
+	var searchesErrorChannel = make(chan error, 1)
 	defer close(searchesErrorChannel)
 	var searchesCtx, searchesCancel = context.WithCancel(context.Background())
 	defer searchesCancel() // Make sure it's called to release resources even if no errors
@@ -119,7 +119,7 @@ func searchInGroup(group string) error {
 	bar := progressbar.NewOptions(lastMessageID-currentMessageID,
 		progressbar.OptionSetDescription("   Scanning messages ...            "),
 		progressbar.OptionSetRenderBlankState(true),
-		progressbar.OptionThrottle(time.Duration(1000)),
+		progressbar.OptionThrottle(time.Millisecond*100),
 	)
 	for currentMessageID <= lastMessageID {
 		var lastMessage int
@@ -136,30 +136,37 @@ func searchInGroup(group string) error {
 				<-searchesGuard
 			}()
 			if err := searchMessages(ctx, currentMessageID, lastMessage, group); err != nil {
-				searchesErrorChannel <- err
+				select {
+				case searchesErrorChannel <- err:
+				default:
+				}
 				searchesCancel()
+				return
+
 			}
 		}(searchesCtx, currentMessageID, lastMessage, group)
 		// update currentMessageID for next request
 		currentMessageID = lastMessage + 1
 	}
-	var barRunner atomic.Value
-	barRunner.Store(true)
-	go func() {
-		searchesWG.Wait()
-		barRunner.Store(false)
-	}()
-	for barRunner.Load() == true {
-		bar.Set(int(atomic.LoadUint64(&directsearchCounter)))
+	go func(bar *progressbar.ProgressBar, ctx context.Context) {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				bar.Set(int(atomic.LoadUint64(&directsearchCounter)))
+			}
+		}
+	}(bar, searchesCtx)
+	searchesWG.Wait()
+	if searchesCtx.Err() != nil {
+		fmt.Println()
+		return <-searchesErrorChannel
 	}
+	searchesCancel()
 	bar.Finish()
 	fmt.Println()
-	select {
-	case err := <-searchesErrorChannel:
-		return err
-	default:
-		return nil
-	}
+	return nil
 }
 
 func searchMessages(ctx context.Context, firstMessage int, lastMessage int, group string) error {
