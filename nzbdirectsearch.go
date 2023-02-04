@@ -97,22 +97,20 @@ func searchInGroup(group string) error {
 	}
 	var currentMessageID int
 	conn, firstMessageID, lastMessageID, err := switchToGroup(group)
+	defer DisconnectNNTP(conn)
 	if err != nil {
 		return err
 	}
 	Log.Info("Scanning from %s to %s", time.Unix(args.UnixDate-int64(interval), 0).Format("02.01.2006 15:04:05"), time.Unix(args.UnixDate, 0).Format("02.01.2006 15:04:05"))
 	currentMessageID, _, err = scanForDate(conn, firstMessageID, lastMessageID, -interval, true, "   Scanning for first message ID ...")
 	if err != nil {
-		DisconnectNNTP(conn)
 		return fmt.Errorf("Error while scanning group '%s' for the first message: %v\n", group, err)
 	}
 	lastMessageID, _, err = scanForDate(conn, firstMessageID, lastMessageID, 0, false, "   Scanning for last message ID ... ")
 	if err != nil {
-		DisconnectNNTP(conn)
 		return fmt.Errorf("Error while scanning group '%s' for the last message: %v\n", group, err)
 	}
 	if currentMessageID >= lastMessageID {
-		DisconnectNNTP(conn)
 		return errors.New("no messages found within search range")
 	}
 	DisconnectNNTP(conn)
