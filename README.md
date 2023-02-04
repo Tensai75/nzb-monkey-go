@@ -34,6 +34,9 @@ Feel free to send pull requests.
 
 ## Change log
 
+#### v0.1.0-beta4
+- Fix panic on NNTP connection errors and empty connectionGuard channel if no connection was established.
+
 #### v0.1.0-beta3
 - directsearch: new configuration parameter "skip" (default true). If set to true directsearch is skipped if a valid NZB file was already found.
 - Fix for the message scan getting stuck on errors.
