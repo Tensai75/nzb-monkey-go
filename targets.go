@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"reflect"
 	"strings"
+	"crypto/tls"
 )
 
 // nzb file target structure
@@ -65,7 +66,10 @@ func request(conf interface{}, httpMethod string, path string, headers map[strin
 	}
 
 	// set up client
-	client := http.Client{}
+	transportCfg := &http.Transport{
+        TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+   	}
+	client := &http.Client{Transport: transportCfg}
 	u, err := url.Parse(fullUrl)
 	if err != nil {
 		return nil, err
