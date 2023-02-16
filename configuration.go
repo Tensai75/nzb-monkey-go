@@ -28,6 +28,7 @@ type Configuration struct {
 		Host               string `ini:"host"`
 		Port               int    `ini:"port"`
 		Ssl                bool   `ini:"ssl"`
+		SkipCheck          bool   `ini:"skip_check"`
 		Nzbkey             string `ini:"nzbkey"`
 		Basicauth_username string `ini:"basicauth_username"`
 		Basicauth_password string `ini:"basicauth_password"`
@@ -39,6 +40,7 @@ type Configuration struct {
 		Host               string `ini:"host"`
 		Port               int    `ini:"port"`
 		Ssl                bool   `ini:"ssl"`
+		SkipCheck          bool   `ini:"skip_check"`
 		Basicauth_username string `ini:"user"`
 		Basicauth_password string `ini:"pass"`
 		Basepath           string `ini:"basepath"`
@@ -49,6 +51,7 @@ type Configuration struct {
 		Host               string `ini:"host"`
 		Port               int    `ini:"port"`
 		Ssl                bool   `ini:"ssl"`
+		SkipCheck          bool   `ini:"skip_check"`
 		Username           string `ini:"user"`
 		Password           string `ini:"pass"`
 		Basicauth_username string

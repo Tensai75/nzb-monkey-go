@@ -1,13 +1,13 @@
 package main
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"reflect"
 	"strings"
-	"crypto/tls"
 )
 
 // nzb file target structure
@@ -46,11 +46,15 @@ var targets = Targets{
 func request(conf interface{}, httpMethod string, path string, headers map[string]string, queryParameters url.Values, body io.Reader, contentType string) ([]byte, error) {
 
 	values := reflect.ValueOf(conf)
+	transportCfg := http.DefaultTransport.(*http.Transport).Clone()
 
 	// generate URL
 	var scheme string
 	if values.FieldByName("Ssl").Bool() == true {
 		scheme = "https://"
+		if values.FieldByName("SkipCheck").Bool() == true {
+			transportCfg.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+		}
 	} else {
 		scheme = "http://"
 	}
@@ -66,9 +70,6 @@ func request(conf interface{}, httpMethod string, path string, headers map[strin
 	}
 
 	// set up client
-	transportCfg := &http.Transport{
-        TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-   	}
 	client := &http.Client{Transport: transportCfg}
 	u, err := url.Parse(fullUrl)
 	if err != nil {

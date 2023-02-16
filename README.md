@@ -34,6 +34,9 @@ Feel free to send pull requests.
 
 ## Change log
 
+#### v0.1.0-rc1
+- Make SSL check skip a configurable option
+
 #### v0.1.0-beta4
 - Fix panic on NNTP connection errors and empty connectionGuard channel if no connection was established.
 

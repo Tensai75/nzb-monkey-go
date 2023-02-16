@@ -35,6 +35,8 @@ host = "localhost"
 port = 8080
 # Use https
 ssl = false
+# skip SSL security checks (e.g. for self signed certificates)
+skip_check = false
 # NZB Key
 nzbkey = ""
 # Basic Auth Username
@@ -55,6 +57,8 @@ host = "localhost"
 port = 6789
 # Use https
 ssl = false
+# skip SSL security checks (e.g. for self signed certificates)
+skip_check = false
 # NZBGet Username
 user = ""
 # NZBGet Password
@@ -73,6 +77,8 @@ host = "localhost"
 port = 5000
 # Use https
 ssl = false
+# skip SSL security checks (e.g. for self signed certificates)
+skip_check = false
 # Downloadstation Username
 user = ""
 # Downloadstation Password
