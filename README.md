@@ -5,10 +5,11 @@ NZB Monkey Go also includes the functionality of the [NZBSearcher](https://githu
 
 ## Running the Monkey
 
-Running the NZB Monkey Go is virtually identical to running the NZB Monkey.
-See detailed information [here](https://nzblnk.github.io/nzb-monkey/).
+Running the NZB Monkey Go is virtually identical to running the original NZB Monkey.
 
-Differences are that in the config.txt file, 'directsearch' can be enabled as an additional search engine in the section 'SEARCHENGINES' and an additional section 'DIRECTSEARCH' is included, required for the direct search on the news server to work.
+Differences are that in the config.txt file, 'directsearch' can be enabled as an additional search engine in the section 'SEARCHENGINES' and an additional section 'DIRECTSEARCH' is included, with additional configuration options required for the direct search on the news server to work.
+
+See the [NZB Monkey Go Wiki](https://github.com/Tensai75/nzb-monkey-go/wiki) for further information regarding installation and configuration.
 
 Note that directsearch requires the NZBLNK to include the news groups (parameter 'g') and an additional parameter for the date ('d') when the post was uploaded to the Usenet.
 Parameter 'd' can be provided either in the format 'DD.MM.YYYY' or as an unix timestamp.
@@ -33,6 +34,9 @@ Please also note that the macOS binary is neither signed nor executable.
 Feel free to send pull requests.
 
 ## Change log
+
+#### v0.1.0
+- New flag '--register' to force registering the NZBLNK
 
 #### v0.1.0-rc1
 - Make SSL check skip a configurable option

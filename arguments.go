@@ -26,6 +26,7 @@ type Args struct {
 	IsTimestamp bool     `arg:"-"` // will indicate if exact timestamp was passed as date
 	Config      string   `arg:"--config" help:"path to the config file"`
 	Debug       bool     `arg:"--debug" help:"logs output to log file"`
+	Register    bool     `arg:"--register" help:"register the NZBLNK protocol"`
 }
 
 // version information
@@ -71,6 +72,13 @@ func parseArguments() {
 }
 
 func checkArguments() {
+
+	if args.Register {
+		fmt.Println()
+		Log.Info("Registering the 'nzblnk' URL protocol ...")
+		registerProtocol()
+		exit(0)
+	}
 
 	if args.Header == "" && args.Nzblnk == "" {
 		writeUsage(argParser)
