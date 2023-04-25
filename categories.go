@@ -21,7 +21,7 @@ func checkCategories() string {
 		fmt.Println()
 		Log.Info("Automatic checking for categories ...")
 		for category, regex := range conf.Categories {
-			if categoryRegexp, err := regexp.Compile(regex); err == nil {
+			if categoryRegexp, err := regexp.Compile("(?i)" + regex); err == nil {
 				if categoryRegexp.Match([]byte(args.Title)) {
 					Log.Info("Using category '%s'", category)
 					return category
