@@ -35,6 +35,9 @@ Feel free to send pull requests.
 
 ## Change log
 
+#### v0.1.1
+- Fix: ignore case if checking for categories (THX @shyper)
+
 #### v0.1.0
 - New flag '--register' to force registering the NZBLNK
 
