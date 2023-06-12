@@ -99,3 +99,10 @@ func initLogger(file string) {
 		exit(1)
 	}
 }
+
+func logClose() {
+	// clean up
+	if logFile != nil {
+		logFile.Close()
+	}
+}

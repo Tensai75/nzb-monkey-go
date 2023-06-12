@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"sort"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/Tensai75/nzb-monkey-go/nzbparser"
@@ -50,6 +52,17 @@ func init() {
 	checkForConfig()
 	checkArguments()
 	loadConfig()
+
+	// graceful handling of manual aborts
+	go func() {
+		exit := make(chan os.Signal, 2)
+		signal.Notify(exit, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+		<-exit
+		logClose() // clean up
+		fmt.Println()
+		fmt.Println()
+		os.Exit(1)
+	}()
 
 }
 
@@ -177,10 +190,7 @@ func exit(exitCode int) {
 		wait_time = int(math.Abs(float64(conf.General.Error_wait_time)))
 	}
 
-	// clean up
-	if logFile != nil {
-		logFile.Close()
-	}
+	logClose() // clean up
 
 	// pause before ending the program
 	fmt.Println()
