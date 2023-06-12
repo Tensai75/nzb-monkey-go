@@ -34,6 +34,9 @@ Please also note that the macOS binary is neither signed nor executable.
 Feel free to send pull requests.
 
 ## Change log
+#### v0.1.2
+- Fix: Move arguments and config functions to main() to avoid blocking of SIGINT
+- Graceful handling of manual aborts
 
 #### v0.1.1
 - Fix: ignore case if checking for categories (THX @shyper)
