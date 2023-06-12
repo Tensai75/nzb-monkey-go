@@ -48,14 +48,9 @@ func init() {
 	fmt.Println()
 	Log.Info("%s%s %s%s", color.Yellow, appName, appVersion, color.Reset)
 
-	parseArguments()
-	checkForConfig()
-	checkArguments()
-	loadConfig()
-
 	// graceful handling of manual aborts
 	go func() {
-		exit := make(chan os.Signal, 2)
+		exit := make(chan os.Signal, 1)
 		signal.Notify(exit, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 		<-exit
 		logClose() // clean up
@@ -67,6 +62,11 @@ func init() {
 }
 
 func main() {
+
+	parseArguments()
+	checkForConfig()
+	checkArguments()
+	loadConfig()
 
 	fmt.Println()
 	Log.Info("Arguments provided:")
