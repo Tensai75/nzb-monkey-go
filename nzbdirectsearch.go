@@ -23,6 +23,8 @@ import (
 
 var directsearchHits = make(map[string]map[string]nzbparser.NzbFile)
 var directsearchCounter uint64
+var startDate int64
+var endDate int64
 var mutex = sync.Mutex{}
 
 func nzbdirectsearch(engine SearchEngine, name string) error {
@@ -96,13 +98,15 @@ func searchInGroup(group string) error {
 	if !args.IsTimestamp {
 		interval += 60 * 60 * 24
 	}
+	startDate = args.UnixDate - int64(interval)
+	endDate = args.UnixDate + int64(60*60*conf.Directsearch.Forward_hours)
 	var currentMessageID int
 	conn, firstMessageID, lastMessageID, err := switchToGroup(group)
 	defer DisconnectNNTP(conn)
 	if err != nil {
 		return err
 	}
-	Log.Info("Scanning from %s to %s", time.Unix(args.UnixDate-int64(interval), 0).Format("02.01.2006 15:04:05"), time.Unix(args.UnixDate, 0).Format("02.01.2006 15:04:05"))
+	Log.Info("Scanning from %s to %s", time.Unix(startDate, 0).Format("02.01.2006 15:04:05"), time.Unix(endDate, 0).Format("02.01.2006 15:04:05"))
 	currentMessageID, _, err = scanForDate(conn, firstMessageID, lastMessageID, -interval, true, "   Scanning for first message ID ...")
 	if err != nil {
 		return fmt.Errorf("Error while scanning group '%s' for the first message: %v\n", group, err)
@@ -202,7 +206,7 @@ func searchMessages(ctx context.Context, firstMessage int, lastMessage int, grou
 		default: // required, otherwise it will block
 		}
 		currentDate := overview.Date.Unix()
-		if currentDate >= args.UnixDate {
+		if currentDate >= endDate {
 			return nil
 		}
 		subject := html.UnescapeString(strings.ToValidUTF8(overview.Subject, ""))
@@ -280,7 +284,7 @@ func scanForDate(conn *nntp.Conn, firstMessageID int, lastMessageID int, interva
 			}
 			for _, overview := range results {
 				bar.Add(1)
-				if overview.Date.Unix() > args.UnixDate+int64(interval) {
+				if overview.Date.Unix() > endDate+int64(interval) {
 					return overview.MessageNumber, overview.Date, nil
 				}
 			}
@@ -296,15 +300,15 @@ func scanForDate(conn *nntp.Conn, firstMessageID int, lastMessageID int, interva
 			overview := results[0]
 			currentDate := overview.Date.Unix()
 			scanStep = scanStep / 2
-			if first && currentMessageID == firstMessageID && currentDate > args.UnixDate+int64(interval) {
+			if first && currentMessageID == firstMessageID && currentDate > endDate+int64(interval) {
 				return overview.MessageNumber, overview.Date, nil
-			} else if !first && currentMessageID == firstMessageID && currentDate > args.UnixDate+int64(interval) {
+			} else if !first && currentMessageID == firstMessageID && currentDate > endDate+int64(interval) {
 				return 0, time.Time{}, fmt.Errorf("post date is older than oldest message of this group")
 			}
-			if currentDate < args.UnixDate+int64(interval) {
+			if currentDate < endDate+int64(interval) {
 				currentMessageID = currentMessageID + scanStep
 			}
-			if currentDate > args.UnixDate+int64(interval) {
+			if currentDate > endDate+int64(interval) {
 				currentMessageID = currentMessageID - scanStep
 			}
 		}
