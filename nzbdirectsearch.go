@@ -56,11 +56,19 @@ func nzbdirectsearch(engine SearchEngine, name string) error {
 		conf.Directsearch.Step = 20000
 	}
 
-	for _, group := range args.Groups {
+	var searchInGroupError error
+
+	for i, group := range args.Groups {
+		if i > 0 && conf.Directsearch.First_group_only && searchInGroupError == nil {
+			fmt.Println()
+			Log.Info("Skipping other groups based on config settings.")
+			return nil
+		}
 		fmt.Println()
 		Log.Info("Searching in group '%s' ...", group)
-		if err := searchInGroup(group); err != nil {
-			Log.Error(err.Error())
+		searchInGroupError = nil
+		if searchInGroupError = searchInGroup(group); searchInGroupError != nil {
+			Log.Error(searchInGroupError.Error())
 		} else {
 			if len(directsearchHits) > 0 {
 				for _, hit := range directsearchHits {

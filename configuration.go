@@ -68,17 +68,18 @@ type Configuration struct {
 	Categories    map[string]string `ini:"-"` // will hold the categories regex patterns
 	Searchengines []string          `ini:"-"` // will hold the search engines
 	Directsearch  struct {
-		Host          string `ini:"host"`
-		Port          int    `ini:"port"`
-		SSL           bool   `ini:"ssl"`
-		Username      string `ini:"username"`
-		Password      string `ini:"password"`
-		Connections   int    `ini:"connections"`
-		Hours         int    `ini:"hours"`
-		Forward_hours int    `ini:"forward_hours"`
-		Step          int    `ini:"step"`
-		Scans         int    `ini:"scans"`
-		Skip          bool   `ini:"skip"`
+		Host             string `ini:"host"`
+		Port             int    `ini:"port"`
+		SSL              bool   `ini:"ssl"`
+		Username         string `ini:"username"`
+		Password         string `ini:"password"`
+		Connections      int    `ini:"connections"`
+		Hours            int    `ini:"hours"`
+		Forward_hours    int    `ini:"forward_hours"`
+		Step             int    `ini:"step"`
+		Scans            int    `ini:"scans"`
+		Skip             bool   `ini:"skip"`
+		First_group_only bool   `ini:"first_group_only"`
 	} `ini:"DIRECTSEARCH"`
 }
 

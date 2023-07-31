@@ -143,5 +143,8 @@ scans = 50
 step = 20000
 # Skip direct search when using best_nzb and a good NZB file has already been found
 skip = true
+# Search only in the first group if several groups are provided
+# (the chance to get different results in different groups is virtually 0)
+first_group_only = false
 `, "\n")
 }
