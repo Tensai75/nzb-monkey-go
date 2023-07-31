@@ -25,21 +25,21 @@ var directsearchHits = make(map[string]map[string]nzbparser.NzbFile)
 var directsearchCounter uint64
 var mutex = sync.Mutex{}
 
-func nzbdirectsearch(engine SearchEngine) (*nzbparser.Nzb, error) {
+func nzbdirectsearch(engine SearchEngine, name string) error {
 
 	if len(results) > 0 && conf.Directsearch.Skip {
 		Log.Info("Results already available. Skipping search based on config settings.")
-		return nil, nil
+		return nil
 	}
 
 	if conf.Directsearch.Username == "" || conf.Directsearch.Password == "" {
-		return nil, fmt.Errorf("No or incomplete credentials for usenet server")
+		return fmt.Errorf("No or incomplete credentials for usenet server")
 	}
 	if len(args.Groups) == 0 {
-		return nil, fmt.Errorf("No groups provided")
+		return fmt.Errorf("No groups provided")
 	}
 	if args.UnixDate == 0 {
-		return nil, fmt.Errorf("No date provided")
+		return fmt.Errorf("No date provided")
 	}
 	if conf.Directsearch.Connections == 0 {
 		conf.Directsearch.Connections = 20
@@ -72,13 +72,14 @@ func nzbdirectsearch(engine SearchEngine) (*nzbparser.Nzb, error) {
 					for id := range nzb.Files {
 						sort.Sort(nzb.Files[id].Segments)
 					}
-					return nzb, nil
+					processResult(nzb, name)
 				}
+			} else {
+				Log.Warn("No result found in group '%s'", group)
 			}
-			Log.Warn("No result in group '%s'", group)
 		}
 	}
-	return nil, fmt.Errorf("No results found")
+	return nil
 
 }
 

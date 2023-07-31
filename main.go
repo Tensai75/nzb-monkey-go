@@ -95,39 +95,7 @@ func main() {
 	for _, name := range conf.Searchengines {
 		fmt.Println()
 		Log.Info("Searching on %s ...", searchEngines[name].name)
-		if nzb, err := searchEngines[name].search(searchEngines[name]); nzb != nil {
-			result := Result{
-				SearchEngine:     name,
-				Nzb:              nzb,
-				FilesMissing:     nzb.TotalFiles - nzb.Files.Len(),
-				FilesComplete:    nzb.TotalFiles-nzb.Files.Len() <= conf.Nzbcheck.Max_missing_files,
-				SegmentsMissing:  float64(float64(nzb.TotalSegments-nzb.Segments) / float64(nzb.TotalSegments) * 100),
-				SegmentsComplete: float64(float64(nzb.TotalSegments-nzb.Segments)/float64(nzb.TotalSegments)*100) <= conf.Nzbcheck.Max_missing_segments_percent,
-			}
-			var filesColor string
-			if result.FilesComplete {
-				filesColor = color.Green
-			} else {
-				filesColor = color.Red
-			}
-			var segmentsColor string
-			if result.SegmentsComplete {
-				segmentsColor = color.Green
-			} else {
-				segmentsColor = color.Red
-			}
-			Log.Info("Found:    %s%s (%s)%s", color.Green, result.Nzb.Files[0].Subject, humanize.Bytes(uint64(result.Nzb.Bytes)), color.Reset)
-			Log.Info("Files:    %s%d/%d (Missing files: %d)%s", filesColor, result.Nzb.Files.Len(), result.Nzb.TotalFiles, result.FilesMissing, color.Reset)
-			Log.Info("Segments: %s%d/%d (Missing segments: %f %%)%s", segmentsColor, result.Nzb.Segments, result.Nzb.TotalSegments, result.SegmentsMissing, color.Reset)
-
-			if !conf.Nzbcheck.Best_nzb && (!conf.Nzbcheck.Skip_failed || (result.FilesComplete && result.SegmentsComplete)) {
-				processFoundNzb(&result)
-			} else {
-				if !conf.Nzbcheck.Skip_failed || (result.FilesComplete && result.SegmentsComplete) {
-					results = append(results, result)
-				}
-			}
-		} else if err != nil {
+		if err := searchEngines[name].search(searchEngines[name], searchEngines[name].name); err != nil {
 			Log.Warn(err.Error())
 		}
 	}
@@ -150,13 +118,47 @@ func main() {
 
 }
 
+func processResult(nzb *nzbparser.Nzb, name string) {
+	result := Result{
+		SearchEngine:     name,
+		Nzb:              nzb,
+		FilesMissing:     nzb.TotalFiles - nzb.Files.Len(),
+		FilesComplete:    nzb.TotalFiles-nzb.Files.Len() <= conf.Nzbcheck.Max_missing_files,
+		SegmentsMissing:  float64(float64(nzb.TotalSegments-nzb.Segments) / float64(nzb.TotalSegments) * 100),
+		SegmentsComplete: float64(float64(nzb.TotalSegments-nzb.Segments)/float64(nzb.TotalSegments)*100) <= conf.Nzbcheck.Max_missing_segments_percent,
+	}
+	var filesColor string
+	if result.FilesComplete {
+		filesColor = color.Green
+	} else {
+		filesColor = color.Red
+	}
+	var segmentsColor string
+	if result.SegmentsComplete {
+		segmentsColor = color.Green
+	} else {
+		segmentsColor = color.Red
+	}
+	Log.Info("Found:    %s%s (%s)%s", color.Green, result.Nzb.Files[0].Subject, humanize.Bytes(uint64(result.Nzb.Bytes)), color.Reset)
+	Log.Info("Files:    %s%d/%d (Missing files: %d)%s", filesColor, result.Nzb.Files.Len(), result.Nzb.TotalFiles, result.FilesMissing, color.Reset)
+	Log.Info("Segments: %s%d/%d (Missing segments: %f %%)%s", segmentsColor, result.Nzb.Segments, result.Nzb.TotalSegments, result.SegmentsMissing, color.Reset)
+
+	if !conf.Nzbcheck.Best_nzb && (!conf.Nzbcheck.Skip_failed || (result.FilesComplete && result.SegmentsComplete)) {
+		processFoundNzb(&result)
+	} else {
+		if !conf.Nzbcheck.Skip_failed || (result.FilesComplete && result.SegmentsComplete) {
+			results = append(results, result)
+		}
+	}
+}
+
 func processFoundNzb(nzb *Result) {
-	Log.Info("Using NZB file from %s", searchEngines[nzb.SearchEngine].name)
+	Log.Info("Using NZB file from %s", nzb.SearchEngine)
 	if !(nzb.FilesComplete && nzb.SegmentsComplete) {
 		Log.Warn("NZB file is probably incomplete!")
 	}
 	var category = checkCategories()
-	nzb.Nzb.Comment = fmt.Sprintf("Downloaded from %s with %s %s", searchEngines[nzb.SearchEngine].name, appName, appVersion)
+	nzb.Nzb.Comment = fmt.Sprintf("Downloaded from %s with %s %s", nzb.SearchEngine, appName, appVersion)
 	if nzb.Nzb.Meta == nil {
 		nzb.Nzb.Meta = make(map[string]string)
 	}

@@ -20,7 +20,7 @@ type SearchEngine struct {
 	regexString string
 	jsonPath    string
 	groupNo     int
-	search      func(engine SearchEngine) (*nzbparser.Nzb, error)
+	search      func(engine SearchEngine, name string) error
 }
 
 // search engines map
@@ -66,7 +66,7 @@ var searchEngines = SearchEngines{
 }
 
 // default search function for html response
-func htmlSearch(engine SearchEngine) (*nzbparser.Nzb, error) {
+func htmlSearch(engine SearchEngine, name string) error {
 	var err error
 	var body string
 	var searchRegexp *regexp.Regexp
@@ -77,22 +77,22 @@ func htmlSearch(engine SearchEngine) (*nzbparser.Nzb, error) {
 				if len(match) >= engine.groupNo+1 {
 					if body, err = loadURL(fmt.Sprintf(engine.downloadURL, match[engine.groupNo])); err == nil {
 						if nzb, err := nzbparser.ParseString(body); err != nil {
-							return nil, err
+							return err
 						} else {
-							return nzb, nil
+							processResult(nzb, name)
 						}
 					}
 				}
 			} else {
-				return nil, fmt.Errorf("No results found")
+				return fmt.Errorf("No results found")
 			}
 		}
 	}
-	return nil, err
+	return err
 }
 
 // default search function for json response
-func jsonSearch(engine SearchEngine) (*nzbparser.Nzb, error) {
+func jsonSearch(engine SearchEngine, name string) error {
 	var err error
 	var body string
 	var result interface{}
@@ -104,13 +104,13 @@ func jsonSearch(engine SearchEngine) (*nzbparser.Nzb, error) {
 					if len(result.([]interface{})) > number {
 						result = result.([]interface{})[number]
 					} else {
-						return nil, fmt.Errorf("No results found")
+						return fmt.Errorf("No results found")
 					}
 				} else {
 					if _, ok := result.(map[string]interface{})[value]; ok {
 						result = result.(map[string]interface{})[value]
 					} else {
-						return nil, fmt.Errorf("No results found")
+						return fmt.Errorf("No results found")
 					}
 				}
 			}
@@ -119,23 +119,24 @@ func jsonSearch(engine SearchEngine) (*nzbparser.Nzb, error) {
 			} else if fmt.Sprintf("%T", result) == "string" {
 				value = fmt.Sprintf("%s", result.(string))
 			} else {
-				return nil, fmt.Errorf("No results found")
+				return fmt.Errorf("No results found")
 			}
 			if body, err = loadURL(fmt.Sprintf(engine.downloadURL, value)); err == nil {
 				if nzb, err := nzbparser.ParseString(body); err != nil {
-					return nil, err
+					return err
 				} else {
-					return nzb, nil
+					processResult(nzb, name)
 				}
 			} else {
-				return nil, err
+				return err
 			}
 		} else {
-			return nil, err
+			return err
 		}
 	} else {
-		return nil, err
+		return err
 	}
+	return nil
 }
 
 func loadURL(url string) (string, error) {
