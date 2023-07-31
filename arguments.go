@@ -106,7 +106,14 @@ func checkArguments() {
 				}
 				if query.Get("g") != "" && args.Groups == nil {
 					for _, group := range query["g"] {
-						args.Groups = append(args.Groups, strings.TrimSpace(group))
+						if strings.Contains(group, ",") || strings.Contains(group, ";") || strings.Contains(group, " ") {
+							divider := regexp.MustCompile(` *[,; ] *`)
+							for _, splitGroup := range divider.Split(group, -1) {
+								args.Groups = append(args.Groups, strings.TrimSpace(splitGroup))
+							}
+						} else {
+							args.Groups = append(args.Groups, strings.TrimSpace(group))
+						}
 					}
 				}
 				if d := query.Get("d"); d != "" && args.Date == "" {
