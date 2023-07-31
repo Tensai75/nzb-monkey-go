@@ -15,6 +15,7 @@ type Configuration struct {
 		Categorize        string `ini:"categorize"`
 		Success_wait_time int    `ini:"success_wait_time"`
 		Error_wait_time   int    `ini:"error_wait_time"`
+		Debug             bool   `ini:"debug"`
 	} `ini:"GENERAL"`
 	Execute struct {
 		Passtofile       bool   `ini:"passtofile"`
@@ -151,4 +152,10 @@ func loadConfig() {
 		// add the searchengines to the config
 		conf.Searchengines = engines
 	}
+
+	// check debug parameter
+	if !args.Debug {
+		args.Debug = conf.General.Debug
+	}
+
 }
