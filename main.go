@@ -148,6 +148,8 @@ func processResult(nzb *nzbparser.Nzb, name string) {
 	} else {
 		if !conf.Nzbcheck.Skip_failed || (result.FilesComplete && result.SegmentsComplete) {
 			results = append(results, result)
+		} else {
+			Log.Warn("NZB file is skipped because it is incomplete!")
 		}
 	}
 }
