@@ -34,6 +34,14 @@ Please also note that the macOS binary is neither signed nor executable.
 Feel free to send pull requests.
 
 ## Change log
+#### v0.1.3
+- Fix: in some circumstances when more the one group was specified, only the first group was searched
+- The user is now informed if a NZB file is skipped due to incompleteness
+- NZBLNKs are now checked whether several groups are specified within a single 'g' parameter (to account for malformed NZBLNKs, e.g. where groups are separated by a space or a comma)
+- Addition of 'forward_hours' config parameter for direct search (to account for that unix timestamps sometimes are the start time of the upload and not the end time)
+- Addition of 'debug' also as a config file parameter (if set to true the cmd line output will be saved to logfile.txt)
+- Addition of 'first_group_only' config file parameter to search first group only during direct search (based on how messages are stored on news servers, the chance to get different results in different groups is virtually zero)
+
 #### v0.1.2
 - Fix: Move arguments and config functions to main() to avoid blocking of SIGINT
 - Graceful handling of manual aborts
