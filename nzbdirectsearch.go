@@ -132,6 +132,16 @@ func searchInGroup(group string) error {
 		progressbar.OptionSetRenderBlankState(true),
 		progressbar.OptionThrottle(time.Millisecond*100),
 	)
+	go func(bar *progressbar.ProgressBar, ctx context.Context) {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				bar.Set(int(atomic.LoadUint64(&directsearchCounter)))
+			}
+		}
+	}(bar, searchesCtx)
 	for currentMessageID <= lastMessageID {
 		var lastMessage int
 		if currentMessageID+step > lastMessageID {
@@ -159,16 +169,6 @@ func searchInGroup(group string) error {
 		// update currentMessageID for next request
 		currentMessageID = lastMessage + 1
 	}
-	go func(bar *progressbar.ProgressBar, ctx context.Context) {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-				bar.Set(int(atomic.LoadUint64(&directsearchCounter)))
-			}
-		}
-	}(bar, searchesCtx)
 	searchesWG.Wait()
 	if searchesCtx.Err() != nil {
 		fmt.Println()
