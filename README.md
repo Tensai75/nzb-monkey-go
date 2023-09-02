@@ -34,6 +34,9 @@ Please also note that the macOS binary is neither signed nor executable.
 Feel free to send pull requests.
 
 ## Change log
+#### v0.1.4
+- Fix: progress bar not updating when scanning for messages
+
 #### v0.1.3
 - Fix: in some circumstances when more the one group was specified, only the first group was searched
 - The user is now informed if a NZB file is skipped due to incompleteness
