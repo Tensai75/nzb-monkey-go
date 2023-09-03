@@ -36,7 +36,11 @@ Feel free to send pull requests.
 ## Change log
 #### v0.1.5
 - Linux version: the config file is moved to `~/.config/nzb-monkey-go.conf` for better compatibility with packed distribution (an existing config.txt file in the application directory will be automatically moved to the new location during the first execution)
-- no functional change to the Windows or Mac OS version
+- Linux version: if debug is enabled, the log file is now created as `/tmp/nzb-monkey-go.log` for better compatibility with packed distribution
+- All versions: the `nzbsavepath` in the `[EXECUTE]` section of the config file must now be an absolute path or a relative path to the user's home directory
+- All versions: default path for `nzbsavepath` in the `[EXECUTE]` section of the config file changed to `./downloads/nzb`.
+- some minor bug fixes and typo fixes (thanks @nzb-tuxxx)
+- executables are now named `nzb-monkey-go(.exe)` (previously `nzbmonkey-go(.exe)`)
 
 #### v0.1.4
 - Fix: progress bar not updating when scanning for messages
