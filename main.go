@@ -31,14 +31,23 @@ var (
 	appVersion string
 	appExec    string
 	appPath    string
+	homePath   string
 	results    = make([]Result, 0)
 )
 
 func init() {
 
-	// set apPath variable
-	appExec, _ = os.Executable()
+	var err error
+	// set path variables
+	if appExec, err = os.Executable(); err != nil {
+		Log.Error("Unable to determin application path")
+		exit(1)
+	}
 	appPath = filepath.Dir(appExec)
+	if homePath, err = os.UserHomeDir(); err != nil {
+		Log.Error("Unable to determin home path")
+		exit(1)
+	}
 
 	// change working directory
 	// important for url protocol handling (otherwise work dir will be system32 on windows)

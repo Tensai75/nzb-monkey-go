@@ -20,7 +20,13 @@ func execute_push(nzb string, category string) error {
 	var path string
 	var err error
 
-	if path, err = filepath.Abs(conf.Execute.Nzbsavepath); err != nil {
+	if filepath.IsAbs(conf.Execute.Nzbsavepath) {
+		path = conf.Execute.Nzbsavepath
+	} else {
+		path = filepath.Join(homePath, conf.Execute.Nzbsavepath)
+	}
+
+	if path, err = filepath.Abs(path); err != nil {
 		return err
 	}
 
@@ -58,7 +64,7 @@ func execute_push(nzb string, category string) error {
 	path = filepath.Join(path, nzbFile)
 
 	// write file
-	if err := ioutil.WriteFile(path, []byte(nzb), os.ModePerm); err != nil {
+	if err := os.WriteFile(path, []byte(nzb), os.ModePerm); err != nil {
 		return err
 	} else {
 		Log.Succ("The NZB file was saved to '%s'", path)

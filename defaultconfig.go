@@ -22,6 +22,7 @@ passtofile = true
 # Copy password to clipboard
 passtoclipboard = false
 # Path to save nzb files
+# Either an absolute path or a path relative to the user's home directory
 nzbsavepath = "./nzb"
 # Don't execute default programm for .nzb
 dontexecute = true
