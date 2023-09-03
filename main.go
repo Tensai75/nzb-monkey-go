@@ -31,7 +31,6 @@ var (
 	appVersion string
 	appExec    string
 	appPath    string
-	confFile   = "config.txt"
 	results    = make([]Result, 0)
 )
 
@@ -64,6 +63,7 @@ func init() {
 func main() {
 
 	parseArguments()
+	setConfPath()
 	checkForConfig()
 	checkArguments()
 	loadConfig()
