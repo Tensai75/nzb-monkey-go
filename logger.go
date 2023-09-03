@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 	"strings"
 
 	color "github.com/TwiN/go-color"
@@ -20,10 +19,9 @@ type Logger struct {
 
 // global error logger variables
 var (
-	logFileName = "./logfile.txt"
-	logFile     *os.File
-	logger      *log.Logger
-	Log         = Logger{
+	logFile *os.File
+	logger  *log.Logger
+	Log     = Logger{
 		Error: logError,
 		Warn:  logWarn,
 		Info:  logInfo,
@@ -52,7 +50,7 @@ func logEntry(logType string, logText string, vars ...interface{}) {
 
 	// init logger if nil
 	if args.Debug == true && logFile == nil {
-		initLogger(filepath.Join(appPath, logFileName))
+		initLogger(logFilePath)
 	}
 
 	// log error

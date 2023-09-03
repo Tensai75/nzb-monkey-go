@@ -5,6 +5,9 @@ import (
 	"path/filepath"
 )
 
+var logFileName = "nzb-monkey-go.log"
+var logFilePath = filepath.Join("/tmp", logFileName)
+
 var confPath string
 
 func setConfPath() {

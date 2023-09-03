@@ -4,6 +4,9 @@ import (
 	"path/filepath"
 )
 
+var logFileName = "logfile.txt"
+var logFilePath = filepath.Join(appPath, logFileName)
+
 var confFile = "config.txt"
 var confPath string
 
