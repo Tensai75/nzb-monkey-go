@@ -38,7 +38,7 @@ func registerProtocol() {
 			fmt.Println()
 			Log.Info("Searching for '%s' ... ", name)
 			if path, _ := exec.LookPath(name); path != "" {
-				Log.Succ("Found! Using '%s' as terminal emulator.")
+				Log.Succ("Found! Using '%s' as terminal emulator.", name)
 				desktopCommand = fmt.Sprintf("%s %s", path, command)
 				break
 			}
@@ -47,7 +47,7 @@ func registerProtocol() {
 		if desktopCommand == "" {
 			terminalFailed = true
 			fmt.Println()
-			Log.Warn("Not terminal emulator found!")
+			Log.Warn("No terminal emulator found!")
 			Log.Info("Please enter the path to your favorite terminal emulator in:")
 			Log.Info("%s", desktopFilePath)
 			Log.Info("and change parameters if necessary.")
@@ -68,7 +68,7 @@ Terminal=false
 		Log.Info("Writing desktop file '%s' ... ", desktopFile)
 		os.MkdirAll(desktopFilePath, os.ModePerm)
 		if err = os.WriteFile(desktopFile, []byte(desktopFileContent), 0644); err == nil {
-			Log.Succ("Desktop file successfully writen")
+			Log.Succ("Desktop file successfully written")
 		} else {
 			Log.Error("Writing desktop file failed: %s", err.Error())
 			Log.Error("Unable to register 'nzblnk' URL protocol")
