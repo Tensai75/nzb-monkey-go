@@ -13,7 +13,7 @@ categorize = "off"
 success_wait_time = 3
 # Seconds to wait befor ending/closing the window after an error
 error_wait_time = 10
-# Save output to logfile.txt
+# Write debug log to logfile.txt on windows/osx (same dir as nzb-monkey-go) or /tmp/nzb-monkey-go.log on linux
 debug = false
 
 [EXECUTE]
