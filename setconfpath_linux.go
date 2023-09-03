@@ -10,7 +10,7 @@ var confPath string
 func setConfPath() {
 
 	oldConfFile := filepath.Join(appPath, "config.txt")
-	confDir := filepath.Join(os.Getenv("HOME"), ".config")
+	confDir := filepath.Join(homePath, ".config")
 	confFile := filepath.Join(confDir, "nzb-monkey-go.conf")
 
 	if args.Config != "" {
