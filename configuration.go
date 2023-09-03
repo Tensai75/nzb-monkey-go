@@ -1,7 +1,6 @@
 package main
 
 import (
-	"path/filepath"
 	"sort"
 	"strconv"
 
@@ -92,20 +91,12 @@ func loadConfig() {
 
 	conf = Configuration{}
 
-	var configFile string
-
-	if args.Config != "" {
-		configFile = filepath.Clean(args.Config)
-	} else {
-		configFile = filepath.Join(appPath, confFile)
-	}
-
 	iniOption := ini.LoadOptions{
 		IgnoreInlineComment: true,
 	}
-	cfg, err := ini.LoadSources(iniOption, configFile)
+	cfg, err := ini.LoadSources(iniOption, confPath)
 	if err != nil {
-		Log.Error("Unable to load configuration file '%s': %s", configFile, err.Error())
+		Log.Error("Unable to load configuration file '%s': %s", confPath, err.Error())
 		exit(1)
 	}
 

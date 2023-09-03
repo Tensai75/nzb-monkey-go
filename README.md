@@ -34,6 +34,10 @@ Please also note that the macOS binary is neither signed nor executable.
 Feel free to send pull requests.
 
 ## Change log
+#### v0.1.5
+- Linux version: the config file is moved to `~/.config/nzb-monkey-go.conf` for better compatibility with packed distribution (an existing config.txt file in the application directory will be automatically moved to the new location during the first execution)
+- no functional change to the Windows or Mac OS version
+
 #### v0.1.4
 - Fix: progress bar not updating when scanning for messages
 

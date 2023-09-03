@@ -22,7 +22,8 @@ passtofile = true
 # Copy password to clipboard
 passtoclipboard = false
 # Path to save nzb files
-nzbsavepath = "./nzb"
+# Either an absolute path or a path relative to the user's home directory
+nzbsavepath = "./downloads/nzb"
 # Don't execute default programm for .nzb
 dontexecute = true
 # Delete old NZB files from nzbsavepath
