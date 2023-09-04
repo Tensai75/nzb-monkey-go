@@ -13,7 +13,7 @@ categorize = "off"
 success_wait_time = 3
 # Seconds to wait befor ending/closing the window after an error
 error_wait_time = 10
-# Save output to logfile.txt
+# Write debug log to logfile.txt on windows/osx (same dir as nzb-monkey-go) or /tmp/nzb-monkey-go.log on linux
 debug = false
 
 [EXECUTE]
@@ -22,7 +22,8 @@ passtofile = true
 # Copy password to clipboard
 passtoclipboard = false
 # Path to save nzb files
-nzbsavepath = "./nzb"
+# Either an absolute path or a path relative to the user's home directory
+nzbsavepath = "./Downloads/nzb"
 # Don't execute default programm for .nzb
 dontexecute = true
 # Delete old NZB files from nzbsavepath
