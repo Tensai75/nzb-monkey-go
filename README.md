@@ -22,6 +22,8 @@ The binaries are available on the [release page](https://github.com/Tensai75/nzb
 
 The linux binary must be chmoded to be executable before it can be started.
 
+For Arch Linux / Manjao user a AUR package is kindly provided by [nzb-tuxxx](https://github.com/nzb-tuxxx): https://aur.archlinux.org/packages/nzb-monkey-go-bin
+
 ### macOS Support
 
 A macOS binary is provided on the [release page](https://github.com/Tensai75/nzb-monkey-go/releases) as well, however the program cannot register the nzblnk URI protocol itself.
