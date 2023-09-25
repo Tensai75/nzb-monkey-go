@@ -228,7 +228,7 @@ func searchMessages(ctx context.Context, firstMessage int, lastMessage int, grou
 				poster := strings.ToValidUTF8(overview.From, "")
 				// make hashes
 				headerHash := GetMD5Hash(subject.Header + poster + strconv.Itoa(subject.TotalFiles))
-				fileHash := GetMD5Hash(headerHash + subject.Filename + strconv.Itoa(subject.TotalSegments))
+				fileHash := GetMD5Hash(headerHash + subject.Filename + strconv.Itoa(subject.File) + strconv.Itoa(subject.TotalSegments))
 				mutex.Lock()
 				if _, ok := directsearchHits[headerHash]; !ok {
 					directsearchHits[headerHash] = make(map[string]nzbparser.NzbFile)
