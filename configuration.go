@@ -17,68 +17,68 @@ type Configuration struct {
 		Debug             bool   `ini:"debug"`
 	} `ini:"GENERAL"`
 	Execute struct {
-		Passtofile       bool   `ini:"passtofile"`
-		Passtoclipboard  bool   `ini:"passtoclipboard"`
-		Nzbsavepath      string `ini:"nzbsavepath"`
-		Dontexecute      bool   `ini:"dontexecute"`
-		Clean_up_enable  bool   `ini:"clean_up_enable"`
-		Clean_up_max_age int    `ini:"clean_up_max_age"`
+		Passtofile      bool   `ini:"passtofile"`
+		Passtoclipboard bool   `ini:"passtoclipboard"`
+		Nzbsavepath     string `ini:"nzbsavepath"`
+		Dontexecute     bool   `ini:"dontexecute"`
+		CleanUpEnable   bool   `ini:"clean_up_enable"`
+		CleanUpMaxAge   int    `ini:"clean_up_max_age"`
 	} `ini:"EXECUTE"`
 	Sabnzbd struct {
-		Host               string `ini:"host"`
-		Port               int    `ini:"port"`
-		Ssl                bool   `ini:"ssl"`
-		SkipCheck          bool   `ini:"skip_check"`
-		Nzbkey             string `ini:"nzbkey"`
-		Basicauth_username string `ini:"basicauth_username"`
-		Basicauth_password string `ini:"basicauth_password"`
-		Basepath           string `ini:"basepath"`
-		Category           string `ini:"category"`
-		Addpaused          bool   `ini:"addpaused"`
+		Host              string `ini:"host"`
+		Port              int    `ini:"port"`
+		Ssl               bool   `ini:"ssl"`
+		SkipCheck         bool   `ini:"skip_check"`
+		Nzbkey            string `ini:"nzbkey"`
+		BasicauthUsername string `ini:"basicauth_username"`
+		BasicauthPassword string `ini:"basicauth_password"`
+		Basepath          string `ini:"basepath"`
+		Category          string `ini:"category"`
+		Addpaused         bool   `ini:"addpaused"`
 	} `ini:"SABNZBD"`
 	Nzbget struct {
-		Host               string `ini:"host"`
-		Port               int    `ini:"port"`
-		Ssl                bool   `ini:"ssl"`
-		SkipCheck          bool   `ini:"skip_check"`
-		Basicauth_username string `ini:"user"`
-		Basicauth_password string `ini:"pass"`
-		Basepath           string `ini:"basepath"`
-		Category           string `ini:"category"`
-		Addpaused          bool   `ini:"addpaused"`
+		Host              string `ini:"host"`
+		Port              int    `ini:"port"`
+		Ssl               bool   `ini:"ssl"`
+		SkipCheck         bool   `ini:"skip_check"`
+		BasicauthUsername string `ini:"user"`
+		BasicauthPassword string `ini:"pass"`
+		Basepath          string `ini:"basepath"`
+		Category          string `ini:"category"`
+		Addpaused         bool   `ini:"addpaused"`
 	} `ini:"NZBGET"`
 	Synologyds struct {
-		Host               string `ini:"host"`
-		Port               int    `ini:"port"`
-		Ssl                bool   `ini:"ssl"`
-		SkipCheck          bool   `ini:"skip_check"`
-		Username           string `ini:"user"`
-		Password           string `ini:"pass"`
-		Basicauth_username string
-		Basicauth_password string
-		Basepath           string `ini:"basepath"`
+		Host              string `ini:"host"`
+		Port              int    `ini:"port"`
+		Ssl               bool   `ini:"ssl"`
+		SkipCheck         bool   `ini:"skip_check"`
+		Username          string `ini:"user"`
+		Password          string `ini:"pass"`
+		BasicauthUsername string
+		BasicauthPassword string
+		Basepath          string `ini:"basepath"`
 	} `ini:"SYNOLOGYDLS"`
 	Nzbcheck struct {
-		Skip_failed                  bool    `ini:"skip_failed"`
-		Max_missing_segments_percent float64 `ini:"max_missing_segments_percent"`
-		Max_missing_files            int     `ini:"max_missing_files"`
-		Best_nzb                     bool    `ini:"best_nzb"`
+		SkipFailed                bool    `ini:"skip_failed"`
+		MaxMissingSegmentsPercent float64 `ini:"max_missing_segments_percent"`
+		MaxMissingFiles           int     `ini:"max_missing_files"`
+		BestNZB                   bool    `ini:"best_nzb"`
 	} `ini:"NZBCheck"`
 	Categories    map[string]string `ini:"-"` // will hold the categories regex patterns
 	Searchengines []string          `ini:"-"` // will hold the search engines
 	Directsearch  struct {
-		Host             string `ini:"host"`
-		Port             int    `ini:"port"`
-		SSL              bool   `ini:"ssl"`
-		Username         string `ini:"username"`
-		Password         string `ini:"password"`
-		Connections      int    `ini:"connections"`
-		Hours            int    `ini:"hours"`
-		Forward_hours    int    `ini:"forward_hours"`
-		Step             int    `ini:"step"`
-		Scans            int    `ini:"scans"`
-		Skip             bool   `ini:"skip"`
-		First_group_only bool   `ini:"first_group_only"`
+		Host           string `ini:"host"`
+		Port           int    `ini:"port"`
+		SSL            bool   `ini:"ssl"`
+		Username       string `ini:"username"`
+		Password       string `ini:"password"`
+		Connections    int    `ini:"connections"`
+		Hours          int    `ini:"hours"`
+		ForwardHours   int    `ini:"forward_hours"`
+		Step           int    `ini:"step"`
+		Scans          int    `ini:"scans"`
+		Skip           bool   `ini:"skip"`
+		FirstGroupOnly bool   `ini:"first_group_only"`
 	} `ini:"DIRECTSEARCH"`
 }
 

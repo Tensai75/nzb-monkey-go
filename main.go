@@ -51,7 +51,10 @@ func init() {
 
 	// change working directory
 	// important for url protocol handling (otherwise work dir will be system32 on windows)
-	os.Chdir(appPath)
+	if err := os.Chdir(appPath); err != nil {
+		fmt.Println("cannot change working directory: ", err)
+		os.Exit(1)
+	}
 
 	fmt.Println()
 	Log.Info("%s%s %s%s", color.Yellow, appName, appVersion, color.Reset)
@@ -109,13 +112,15 @@ func main() {
 		}
 	}
 
-	if len(results) > 0 && conf.Nzbcheck.Best_nzb {
+	if len(results) > 0 && conf.Nzbcheck.BestNZB {
 		fmt.Println()
 		Log.Info("Using best NZB file found")
 		sort.SliceStable(results, func(i, j int) bool {
-			return results[i].FilesMissing < results[j].FilesMissing
-		})
-		sort.SliceStable(results, func(i, j int) bool {
+			// Sort first by files missing
+			if results[i].FilesMissing != results[j].FilesMissing {
+				return results[i].FilesMissing < results[j].FilesMissing
+			}
+			// ... and then by segments missing
 			return results[i].SegmentsMissing < results[j].SegmentsMissing
 		})
 		processFoundNzb(&results[0])
@@ -132,9 +137,9 @@ func processResult(nzb *nzbparser.Nzb, name string) {
 		SearchEngine:     name,
 		Nzb:              nzb,
 		FilesMissing:     nzb.TotalFiles - nzb.Files.Len(),
-		FilesComplete:    nzb.TotalFiles-nzb.Files.Len() <= conf.Nzbcheck.Max_missing_files,
+		FilesComplete:    nzb.TotalFiles-nzb.Files.Len() <= conf.Nzbcheck.MaxMissingFiles,
 		SegmentsMissing:  float64(float64(nzb.TotalSegments-nzb.Segments) / float64(nzb.TotalSegments) * 100),
-		SegmentsComplete: float64(float64(nzb.TotalSegments-nzb.Segments)/float64(nzb.TotalSegments)*100) <= conf.Nzbcheck.Max_missing_segments_percent,
+		SegmentsComplete: float64(float64(nzb.TotalSegments-nzb.Segments)/float64(nzb.TotalSegments)*100) <= conf.Nzbcheck.MaxMissingSegmentsPercent,
 	}
 	var filesColor string
 	if result.FilesComplete {
@@ -152,20 +157,20 @@ func processResult(nzb *nzbparser.Nzb, name string) {
 	Log.Info("Files:    %s%d/%d (Missing files: %d)%s", filesColor, result.Nzb.Files.Len(), result.Nzb.TotalFiles, result.FilesMissing, color.Reset)
 	Log.Info("Segments: %s%d/%d (Missing segments: %f %%)%s", segmentsColor, result.Nzb.Segments, result.Nzb.TotalSegments, result.SegmentsMissing, color.Reset)
 
-	if !conf.Nzbcheck.Best_nzb && (!conf.Nzbcheck.Skip_failed || (result.FilesComplete && result.SegmentsComplete)) {
-		processFoundNzb(&result)
-	} else {
-		if !conf.Nzbcheck.Skip_failed || (result.FilesComplete && result.SegmentsComplete) {
-			results = append(results, result)
+	if !conf.Nzbcheck.SkipFailed || (result.FilesComplete && result.SegmentsComplete) {
+		if !conf.Nzbcheck.BestNZB {
+			processFoundNzb(&result)
 		} else {
-			Log.Warn("NZB file is skipped because it is incomplete!")
+			results = append(results, result)
 		}
+	} else {
+		Log.Warn("NZB file is skipped because it is incomplete!")
 	}
 }
 
 func processFoundNzb(nzb *Result) {
 	Log.Info("Using NZB file from %s", nzb.SearchEngine)
-	if !(nzb.FilesComplete && nzb.SegmentsComplete) {
+	if !nzb.FilesComplete || !nzb.SegmentsComplete {
 		Log.Warn("NZB file is probably incomplete!")
 	}
 	var category = checkCategories()
@@ -173,9 +178,9 @@ func processFoundNzb(nzb *Result) {
 	if nzb.Nzb.Meta == nil {
 		nzb.Nzb.Meta = make(map[string]string)
 	}
-	nzb.Nzb.Meta["title"] = fmt.Sprintf("%s", args.Title)
+	nzb.Nzb.Meta["title"] = args.Title
 	if args.Password != "" {
-		nzb.Nzb.Meta["password"] = fmt.Sprintf("%s", args.Password)
+		nzb.Nzb.Meta["password"] = args.Password
 	}
 	var err error
 	var nzbfile string
@@ -217,5 +222,4 @@ func exit(exitCode int) {
 	fmt.Println()
 	fmt.Println()
 	os.Exit(exitCode)
-
 }

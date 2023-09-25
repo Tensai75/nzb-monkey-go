@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -50,16 +49,16 @@ func execute_push(nzb string, category string) error {
 	}
 
 	// clean up files before writing new one
-	if conf.Execute.Clean_up_enable {
+	if conf.Execute.CleanUpEnable {
 		go execute_cleanup(path)
 	}
 
 	// make full filename
-	nzbFile := fmt.Sprintf("%s", args.Title)
+	nzbFile := args.Title
 	if conf.Execute.Passtofile && args.Password != "" {
 		nzbFile += fmt.Sprintf("{{%s}}", args.Password)
 	}
-	nzbFile += fmt.Sprintf(".nzb")
+	nzbFile += ".nzb"
 
 	path = filepath.Join(path, nzbFile)
 
@@ -93,11 +92,16 @@ func execute_push(nzb string, category string) error {
 }
 
 func execute_cleanup(path string) {
-	files, err := ioutil.ReadDir(path)
+	files, err := os.ReadDir(path)
 	if err == nil {
 		for _, file := range files {
-			if file.Mode().IsRegular() {
-				if time.Now().Sub(file.ModTime()) > time.Hour*time.Duration(conf.Execute.Clean_up_max_age*24) && filepath.Ext(file.Name()) == ".nzb" {
+			info, err := file.Info()
+			if err != nil {
+				Log.Error("Cannot load file info: %v", err)
+				continue
+			}
+			if info.Mode().IsRegular() {
+				if time.Since(info.ModTime()) > time.Hour*time.Duration(conf.Execute.CleanUpMaxAge*24) && filepath.Ext(file.Name()) == ".nzb" {
 					os.Remove(filepath.Join(path, file.Name()))
 				}
 			}

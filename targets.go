@@ -50,9 +50,9 @@ func request(conf interface{}, httpMethod string, path string, headers map[strin
 
 	// generate URL
 	var scheme string
-	if values.FieldByName("Ssl").Bool() == true {
+	if values.FieldByName("Ssl").Bool() {
 		scheme = "https://"
-		if values.FieldByName("SkipCheck").Bool() == true {
+		if values.FieldByName("SkipCheck").Bool() {
 			transportCfg.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 		}
 	} else {

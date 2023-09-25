@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -117,7 +117,7 @@ func jsonSearch(engine SearchEngine, name string) error {
 			if fmt.Sprintf("%T", result) == "float64" {
 				value = fmt.Sprintf("%d", int(result.(float64)))
 			} else if fmt.Sprintf("%T", result) == "string" {
-				value = fmt.Sprintf("%s", result.(string))
+				value = result.(string)
 			} else {
 				return fmt.Errorf("No results found")
 			}
@@ -144,7 +144,7 @@ func loadURL(url string) (string, error) {
 		return "", err
 	} else {
 		defer resp.Body.Close()
-		if body, err := ioutil.ReadAll(resp.Body); err != nil {
+		if body, err := io.ReadAll(resp.Body); err != nil {
 			return "", err
 		} else {
 			return string(body), nil
