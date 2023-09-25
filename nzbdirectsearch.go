@@ -126,6 +126,7 @@ func searchInGroup(group string) error {
 		return errors.New("no messages found within search range")
 	}
 	conn.close()
+	directsearchCounter = 0
 	bar := progressbar.NewOptions(lastMessageID-currentMessageID,
 		progressbar.OptionSetDescription("   Scanning messages ...            "),
 		progressbar.OptionSetRenderBlankState(true),
