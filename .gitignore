@@ -28,3 +28,9 @@ bin
 *.yml
 *.zip
 *.log
+
+# github codespace
+oryxBuildBinary
+
+# dont ignore gh action yml
+!.github/workflows/build_and_publish.yml

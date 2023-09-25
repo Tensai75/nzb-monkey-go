@@ -1,0 +1,106 @@
+name: Build and Publish
+
+on:
+  release:
+    types:
+      - created
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Build for Linux (amd64)
+        run: |
+          GOARCH=amd64 go build -x -o nzb-monkey-go-linux-amd64-v${{ github.ref_name }}
+        working-directory: .
+
+      - name: Build for Linux (arm64)
+        run: |
+          GOARCH=arm64 go build -x -o nzb-monkey-go-linux-arm64-${{ github.ref_name }}
+        working-directory: .
+
+      - name: Build for Linux (armv6)
+        run: |
+          GOARCH=arm GOARM=6 go build -x -o nzb-monkey-go-linux-armv6-${{ github.ref_name }}
+        working-directory: .
+
+      - name: Build for Linux (armv7)
+        run: |
+          GOARCH=arm GOARM=7 go build -x -o nzb-monkey-go-linux-armv7-${{ github.ref_name }}
+        working-directory: .
+
+      - name: Build for macOS (darwin)
+        run: |
+          GOARCH=amd64 GOOS=darwin go build -x -o nzb-monkey-go-darwin-amd64-${{ github.ref_name }}
+        working-directory: .
+
+      - name: Create Debian Package (amd64)
+        run: |
+          mkdir -p nzb-monkey-go-deb-amd64/DEBIAN
+          VERSION=$(echo "${{ github.ref_name }}" | sed 's/^v//')
+          echo "Package: nzb-monkey-go" >> nzb-monkey-go-deb-amd64/DEBIAN/control
+          echo "Version: ${VERSION}" >> nzb-monkey-go-deb-amd64/DEBIAN/control
+          echo "Maintainer: ${{ github.repository_owner }} <${{ github.repository_owner_email }}>" >> nzb-monkey-go-deb-amd64/DEBIAN/control
+          echo "Architecture: amd64" >> nzb-monkey-go-deb-amd64/DEBIAN/control
+          echo "Description: NZB Monkey Go - Golang version of the NZB Monkey with included NZB direct search" >> nzb-monkey-go-deb-amd64/DEBIAN/control
+          dpkg-deb --build nzb-monkey-go-deb-amd64 nzb-monkey-go-deb-amd64-${{ github.ref_name }}.deb
+        working-directory: .
+
+      - name: Create Debian Package (arm64)
+        run: |
+          mkdir -p nzb-monkey-go-deb-arm64/DEBIAN
+          VERSION=$(echo "${{ github.ref_name }}" | sed 's/^v//')
+          echo "Package: nzb-monkey-go" >> nzb-monkey-go-deb-arm64/DEBIAN/control
+          echo "Version: ${VERSION}" >> nzb-monkey-go-deb-arm64/DEBIAN/control
+          echo "Maintainer: ${{ github.repository_owner }} <${{ github.repository_owner_email }}>" >> nzb-monkey-go-deb-arm64/DEBIAN/control
+          echo "Architecture: arm64" >> nzb-monkey-go-deb-arm64/DEBIAN/control
+          echo "Description: NZB Monkey Go - Golang version of the NZB Monkey with included NZB direct search" >> nzb-monkey-go-deb-arm64/DEBIAN/control
+          dpkg-deb --build nzb-monkey-go-deb-arm64 nzb-monkey-go-deb-arm64-${{ github.ref_name }}.deb
+        working-directory: .
+
+      - name: Create Debian Package (armv6)
+        run: |
+          mkdir -p nzb-monkey-go-deb-armv6/DEBIAN
+          VERSION=$(echo "${{ github.ref_name }}" | sed 's/^v//')
+          echo "Package: nzb-monkey-go" >> nzb-monkey-go-deb-armv6/DEBIAN/control
+          echo "Version: ${VERSION}" >> nzb-monkey-go-deb-armv6/DEBIAN/control
+          echo "Maintainer: ${{ github.repository_owner }} <${{ github.repository_owner_email }}>" >> nzb-monkey-go-deb-armv6/DEBIAN/control
+          echo "Architecture: armv6" >> nzb-monkey-go-deb-armv6/DEBIAN/control
+          echo "Description: NZB Monkey Go - Golang version of the NZB Monkey with included NZB direct search" >> nzb-monkey-go-deb-armv6/DEBIAN/control
+          dpkg-deb --build nzb-monkey-go-deb-armv6 nzb-monkey-go-deb-armv6-${{ github.ref_name }}.deb
+        working-directory: .
+
+      - name: Create Debian Package (armv7)
+        run: |
+          mkdir -p nzb-monkey-go-deb-armv7/DEBIAN
+          VERSION=$(echo "${{ github.ref_name }}" | sed 's/^v//')
+          echo "Package: nzb-monkey-go" >> nzb-monkey-go-deb-armv7/DEBIAN/control
+          echo "Version: ${VERSION}" >> nzb-monkey-go-deb-armv7/DEBIAN/control
+          echo "Maintainer: ${{ github.repository_owner }} <${{ github.repository_owner_email }}>" >> nzb-monkey-go-deb-armv7/DEBIAN/control
+          echo "Architecture: armv7" >> nzb-monkey-go-deb-armv7/DEBIAN/control
+          echo "Description: NZB Monkey Go - Golang version of the NZB Monkey with included NZB direct search" >> nzb-monkey-go-deb-armv7/DEBIAN/control
+          dpkg-deb --build nzb-monkey-go-deb-armv7 nzb-monkey-go-deb-armv7-${{ github.ref_name }}.deb
+        working-directory: .
+
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            nzb-monkey-go-linux-amd64-${{ github.ref_name }}
+            nzb-monkey-go-linux-arm64-${{ github.ref_name }}
+            nzb-monkey-go-linux-armv6-${{ github.ref_name }}
+            nzb-monkey-go-linux-armv7-${{ github.ref_name }}
+            nzb-monkey-go-darwin-amd64-${{ github.ref_name }}
+            nzb-monkey-go-deb-amd64-${{ github.ref_name }}.deb
+            nzb-monkey-go-deb-arm64-${{ github.ref_name }}.deb
+            nzb-monkey-go-deb-armv6-${{ github.ref_name }}.deb
+            nzb-monkey-go-deb-armv7-${{ github.ref_name }}.deb
