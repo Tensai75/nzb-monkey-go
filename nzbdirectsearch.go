@@ -109,10 +109,10 @@ func searchInGroup(group string) error {
 	endDate = args.UnixDate + int64(60*60*conf.Directsearch.Forward_hours)
 	var currentMessageID int
 	conn, firstMessageID, lastMessageID, err := switchToGroup(group)
-	defer conn.close()
 	if err != nil {
 		return err
 	}
+	defer conn.Close()
 	Log.Info("Scanning from %s to %s", time.Unix(startDate, 0).Format("02.01.2006 15:04:05"), time.Unix(endDate, 0).Format("02.01.2006 15:04:05"))
 	currentMessageID, _, err = scanForDate(conn, firstMessageID, lastMessageID, -interval, true, "   Scanning for first message ID ...")
 	if err != nil {
@@ -125,7 +125,7 @@ func searchInGroup(group string) error {
 	if currentMessageID >= lastMessageID {
 		return errors.New("no messages found within search range")
 	}
-	conn.close()
+	conn.Close()
 	directsearchCounter = 0
 	bar := progressbar.NewOptions(lastMessageID-currentMessageID,
 		progressbar.OptionSetDescription("   Scanning messages ...            "),
@@ -187,10 +187,10 @@ func searchMessages(ctx context.Context, firstMessage int, lastMessage int, grou
 	default: // required, otherwise it will block
 	}
 	conn, firstMessageID, lastMessageID, err := switchToGroup(group)
-	defer conn.close()
 	if err != nil {
 		return err
 	}
+	defer conn.Close()
 	if firstMessage < firstMessageID {
 		firstMessage = firstMessageID
 	}
@@ -203,7 +203,7 @@ func searchMessages(ctx context.Context, firstMessage int, lastMessage int, grou
 	default: // required, otherwise it will block
 	}
 	results, err := conn.Overview(firstMessage, lastMessage)
-	conn.close()
+	conn.Close()
 	if err != nil {
 		return fmt.Errorf("Error retrieving message overview from the usenet server while searching in group '%s': %v\n", group, err)
 	}
