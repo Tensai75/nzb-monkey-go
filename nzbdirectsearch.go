@@ -15,7 +15,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Tensai75/nntp"
 	"github.com/Tensai75/nzb-monkey-go/nzbparser"
 	"github.com/Tensai75/nzb-monkey-go/subjectparser"
 	progressbar "github.com/schollz/progressbar/v3"
@@ -110,7 +109,7 @@ func searchInGroup(group string) error {
 	endDate = args.UnixDate + int64(60*60*conf.Directsearch.Forward_hours)
 	var currentMessageID int
 	conn, firstMessageID, lastMessageID, err := switchToGroup(group)
-	defer DisconnectNNTP(conn)
+	defer conn.close()
 	if err != nil {
 		return err
 	}
@@ -126,7 +125,7 @@ func searchInGroup(group string) error {
 	if currentMessageID >= lastMessageID {
 		return errors.New("no messages found within search range")
 	}
-	DisconnectNNTP(conn)
+	conn.close()
 	bar := progressbar.NewOptions(lastMessageID-currentMessageID,
 		progressbar.OptionSetDescription("   Scanning messages ...            "),
 		progressbar.OptionSetRenderBlankState(true),
@@ -187,7 +186,7 @@ func searchMessages(ctx context.Context, firstMessage int, lastMessage int, grou
 	default: // required, otherwise it will block
 	}
 	conn, firstMessageID, lastMessageID, err := switchToGroup(group)
-	defer DisconnectNNTP(conn)
+	defer conn.close()
 	if err != nil {
 		return err
 	}
@@ -203,7 +202,7 @@ func searchMessages(ctx context.Context, firstMessage int, lastMessage int, grou
 	default: // required, otherwise it will block
 	}
 	results, err := conn.Overview(firstMessage, lastMessage)
-	DisconnectNNTP(conn)
+	conn.close()
 	if err != nil {
 		return fmt.Errorf("Error retrieving message overview from the usenet server while searching in group '%s': %v\n", group, err)
 	}
@@ -267,7 +266,7 @@ func searchMessages(ctx context.Context, firstMessage int, lastMessage int, grou
 	return nil
 }
 
-func scanForDate(conn *nntp.Conn, firstMessageID int, lastMessageID int, interval int, first bool, text string) (int, time.Time, error) {
+func scanForDate(conn *safeConn, firstMessageID int, lastMessageID int, interval int, first bool, text string) (int, time.Time, error) {
 	bar := progressbar.NewOptions(lastMessageID-firstMessageID,
 		progressbar.OptionSetDescription(text),
 		progressbar.OptionSetRenderBlankState(true),
@@ -326,7 +325,7 @@ func scanForDate(conn *nntp.Conn, firstMessageID int, lastMessageID int, interva
 	return 0, time.Time{}, fmt.Errorf("no messages found within search range")
 }
 
-func switchToGroup(group string) (*nntp.Conn, int, int, error) {
+func switchToGroup(group string) (*safeConn, int, int, error) {
 	conn, err := ConnectNNTP()
 	if err != nil {
 		return nil, 0, 0, fmt.Errorf("Error connecting to the usenet server: %v", err)
