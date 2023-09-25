@@ -36,6 +36,11 @@ Please also note that the macOS binary is neither signed nor executable.
 Feel free to send pull requests.
 
 ## Change log
+#### v0.1.6
+- possible bug fix for the occasional "too many connections" errors
+- bug fix for the progress bar not progressing for further groups after first group was scanned
+- improved indexing of message subjects (improved hashing of file names for better differentiation)
+
 #### v0.1.5
 - Linux version: the config file is moved to `~/.config/nzb-monkey-go.conf` for better compatibility with packed distribution (an existing config.txt file in the application directory will be automatically moved to the new location during the first execution)
 - Linux version: if debug is enabled, the log file is now created as `/tmp/nzb-monkey-go.log` for better compatibility with packed distribution
