@@ -1,3 +1,7 @@
+[![Release Workflow](https://github.com/Tensai75/nzb-monkey-go/actions/workflows/build_and_publish.yml/badge.svg?event=release)](https://github.com/Tensai75/nzb-monkey-go/actions/workflows/build_and_publish.yml)
+[![Push Workflow](https://github.com/Tensai75/nzb-monkey-go/actions/workflows/build_and_publish.yml/badge.svg?event=push)](https://github.com/Tensai75/nzb-monkey-go/actions/workflows/build_and_publish.yml)
+![Latest Release)](https://img.shields.io/github/v/release/Tensai75/nzb-monkey-go?logo=github)
+
 # NZB Monkey Go
 
 A completely rewritten version in Golang of the [NZB Monkey](https://github.com/nzblnk/nzb-monkey), the reference implementation written in Python of how to handle a [NZBLNK](https://nzblnk.github.io/)-URI.

@@ -1,14 +1,39 @@
 name: Build and Publish
 
 on:
+  push:
   release:
     types:
-      - created
+      - published
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        os-arch:
+          - name: Linux-amd64
+            os: linux
+            arch: amd64
+          - name: macOS-amd64
+            os: darwin
+            arch: amd64
+          - name: macOS-arm64
+            os: darwin
+            arch: arm64
+          - name: Windows-amd64
+            os: windows
+            arch: amd64
+          - name: Windows-386
+            os: windows
+            arch: 386 # 32bit
+          - name: Linux-arm
+            os: linux
+            arch: arm
+          - name: Linux-arm64
+            os: linux
+            arch: arm64
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -16,91 +41,38 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version-file: 'go.mod'
-
-      - name: Build for Linux (amd64)
+          go-version-file: 'go.mod' # Use the Go version specified in go.mod
+      - name: Set Ref Name Variable
         run: |
-          GOARCH=amd64 go build -x -o nzb-monkey-go-linux-amd64-v${{ github.ref_name }}
-        working-directory: .
-
-      - name: Build for Linux (arm64)
+          if [ "$GITHUB_EVENT_NAME" != "release" ]; then
+            # Use Git commit SHA as the reference when manually triggered
+            ref_name=${GITHUB_SHA::7}
+          else
+            ref_name=${{ github.ref_name }}
+          fi
+          echo "REF_NAME=${ref_name}" >> "$GITHUB_ENV"
+      - name: Build for ${{ matrix.os-arch.name }}
         run: |
-          GOARCH=arm64 go build -x -o nzb-monkey-go-linux-arm64-${{ github.ref_name }}
-        working-directory: .
-
-      - name: Build for Linux (armv6)
-        run: |
-          GOARCH=arm GOARM=6 go build -x -o nzb-monkey-go-linux-armv6-${{ github.ref_name }}
-        working-directory: .
-
-      - name: Build for Linux (armv7)
-        run: |
-          GOARCH=arm GOARM=7 go build -x -o nzb-monkey-go-linux-armv7-${{ github.ref_name }}
-        working-directory: .
-
-      - name: Build for macOS (darwin)
-        run: |
-          GOARCH=amd64 GOOS=darwin go build -x -o nzb-monkey-go-darwin-amd64-${{ github.ref_name }}
-        working-directory: .
-
-      - name: Create Debian Package (amd64)
-        run: |
-          mkdir -p nzb-monkey-go-deb-amd64/DEBIAN
-          VERSION=$(echo "${{ github.ref_name }}" | sed 's/^v//')
-          echo "Package: nzb-monkey-go" >> nzb-monkey-go-deb-amd64/DEBIAN/control
-          echo "Version: ${VERSION}" >> nzb-monkey-go-deb-amd64/DEBIAN/control
-          echo "Maintainer: ${{ github.repository_owner }} <${{ github.repository_owner_email }}>" >> nzb-monkey-go-deb-amd64/DEBIAN/control
-          echo "Architecture: amd64" >> nzb-monkey-go-deb-amd64/DEBIAN/control
-          echo "Description: NZB Monkey Go - Golang version of the NZB Monkey with included NZB direct search" >> nzb-monkey-go-deb-amd64/DEBIAN/control
-          dpkg-deb --build nzb-monkey-go-deb-amd64 nzb-monkey-go-deb-amd64-${{ github.ref_name }}.deb
-        working-directory: .
-
-      - name: Create Debian Package (arm64)
-        run: |
-          mkdir -p nzb-monkey-go-deb-arm64/DEBIAN
-          VERSION=$(echo "${{ github.ref_name }}" | sed 's/^v//')
-          echo "Package: nzb-monkey-go" >> nzb-monkey-go-deb-arm64/DEBIAN/control
-          echo "Version: ${VERSION}" >> nzb-monkey-go-deb-arm64/DEBIAN/control
-          echo "Maintainer: ${{ github.repository_owner }} <${{ github.repository_owner_email }}>" >> nzb-monkey-go-deb-arm64/DEBIAN/control
-          echo "Architecture: arm64" >> nzb-monkey-go-deb-arm64/DEBIAN/control
-          echo "Description: NZB Monkey Go - Golang version of the NZB Monkey with included NZB direct search" >> nzb-monkey-go-deb-arm64/DEBIAN/control
-          dpkg-deb --build nzb-monkey-go-deb-arm64 nzb-monkey-go-deb-arm64-${{ github.ref_name }}.deb
-        working-directory: .
-
-      - name: Create Debian Package (armv6)
-        run: |
-          mkdir -p nzb-monkey-go-deb-armv6/DEBIAN
-          VERSION=$(echo "${{ github.ref_name }}" | sed 's/^v//')
-          echo "Package: nzb-monkey-go" >> nzb-monkey-go-deb-armv6/DEBIAN/control
-          echo "Version: ${VERSION}" >> nzb-monkey-go-deb-armv6/DEBIAN/control
-          echo "Maintainer: ${{ github.repository_owner }} <${{ github.repository_owner_email }}>" >> nzb-monkey-go-deb-armv6/DEBIAN/control
-          echo "Architecture: armv6" >> nzb-monkey-go-deb-armv6/DEBIAN/control
-          echo "Description: NZB Monkey Go - Golang version of the NZB Monkey with included NZB direct search" >> nzb-monkey-go-deb-armv6/DEBIAN/control
-          dpkg-deb --build nzb-monkey-go-deb-armv6 nzb-monkey-go-deb-armv6-${{ github.ref_name }}.deb
-        working-directory: .
-
-      - name: Create Debian Package (armv7)
-        run: |
-          mkdir -p nzb-monkey-go-deb-armv7/DEBIAN
-          VERSION=$(echo "${{ github.ref_name }}" | sed 's/^v//')
-          echo "Package: nzb-monkey-go" >> nzb-monkey-go-deb-armv7/DEBIAN/control
-          echo "Version: ${VERSION}" >> nzb-monkey-go-deb-armv7/DEBIAN/control
-          echo "Maintainer: ${{ github.repository_owner }} <${{ github.repository_owner_email }}>" >> nzb-monkey-go-deb-armv7/DEBIAN/control
-          echo "Architecture: armv7" >> nzb-monkey-go-deb-armv7/DEBIAN/control
-          echo "Description: NZB Monkey Go - Golang version of the NZB Monkey with included NZB direct search" >> nzb-monkey-go-deb-armv7/DEBIAN/control
-          dpkg-deb --build nzb-monkey-go-deb-armv7 nzb-monkey-go-deb-armv7-${{ github.ref_name }}.deb
-        working-directory: .
-
+          mkdir -p builds/${{ matrix.os-arch.name }}
+          if [ "${{ matrix.os-arch.os }}" == "windows" ]; then
+            # For Windows, add .exe to the binary name
+            binary_name=nzb-monkey-go.exe
+          else
+            binary_name=nzb-monkey-go
+          fi
+          GOARCH=${{ matrix.os-arch.arch }} GOOS=${{ matrix.os-arch.os }} go build -ldflags="-X main.version=${{ env.REF_NAME }}" -o builds/${{ matrix.os-arch.name }}/$binary_name
+          zip -j "nzb-monkey-go_${{ env.REF_NAME }}-${{ matrix.os-arch.arch }}-${{ matrix.os-arch.os }}.zip" builds/${{ matrix.os-arch.name }}/$binary_name
       - name: Upload Release Assets
+        if: github.event_name == 'release' # Only on release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            nzb-monkey-go-linux-amd64-${{ github.ref_name }}
-            nzb-monkey-go-linux-arm64-${{ github.ref_name }}
-            nzb-monkey-go-linux-armv6-${{ github.ref_name }}
-            nzb-monkey-go-linux-armv7-${{ github.ref_name }}
-            nzb-monkey-go-darwin-amd64-${{ github.ref_name }}
-            nzb-monkey-go-deb-amd64-${{ github.ref_name }}.deb
-            nzb-monkey-go-deb-arm64-${{ github.ref_name }}.deb
-            nzb-monkey-go-deb-armv6-${{ github.ref_name }}.deb
-            nzb-monkey-go-deb-armv7-${{ github.ref_name }}.deb
+            nzb-monkey-go_*.zip
+
+      - name: Upload Artifact for ${{ matrix.os-arch.name }}
+        # if: github.event_name == 'workflow_dispatch' # Only on manual trigger
+        uses: actions/upload-artifact@v3
+        with:
+          name: nzb-monkey-go_${{ env.REF_NAME }}-${{ matrix.os-arch.arch }}-${{ matrix.os-arch.os }}
+          path: |
+            builds/${{ matrix.os-arch.name }}/nzb-monkey-go*
