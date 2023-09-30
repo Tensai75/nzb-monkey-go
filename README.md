@@ -10,7 +10,7 @@ NZB Monkey Go also includes the functionality of the [NZBSearcher](https://githu
 
 Running the NZB Monkey Go is virtually identical to running the original NZB Monkey.
 
-Differences are that in the config.txt file, 'directsearch' can be enabled as an additional search engine in the section 'SEARCHENGINES' and an additional section 'DIRECTSEARCH' is included, with additional configuration options required for the direct search on the news server to work.
+Differences are that in the configuration file, 'directsearch' can be enabled as an additional search engine in the section 'SEARCHENGINES' and an additional section 'DIRECTSEARCH' is included, with additional configuration options required for the direct search on the news server to work.
 
 See the [NZB Monkey Go Wiki](https://github.com/Tensai75/nzb-monkey-go/wiki) for further information regarding installation and configuration.
 
@@ -23,16 +23,14 @@ Parameter 'd' can be provided either in the format 'DD.MM.YYYY' or as an unix ti
 
 The binaries are available on the [release page](https://github.com/Tensai75/nzb-monkey-go/releases).
 
-The linux binary must be chmoded to be executable before it can be started.
-
 For Arch Linux / Manjao user a AUR package is kindly provided by [nzb-tuxxx](https://github.com/nzb-tuxxx): https://aur.archlinux.org/packages/nzb-monkey-go-bin
 
 ### macOS Support
 
-A macOS binary is provided on the [release page](https://github.com/Tensai75/nzb-monkey-go/releases) as well, however the program cannot register the nzblnk URI protocol itself.
+A macOS binaries are provided on the [release page](https://github.com/Tensai75/nzb-monkey-go/releases) as well, however the program cannot register the nzblnk URI protocol itself.
 On the NZB Monkey github some solutions on how to register the protocol have been [discussed](https://github.com/nzblnk/nzb-monkey/issues/20) which should work for the NZB Monkey Go as well.
 
-Please also note that the macOS binary is neither signed nor executable.
+Please also note that the macOS binaries are not signed.
 
 ## Contribution
 
