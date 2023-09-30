@@ -60,7 +60,7 @@ jobs:
           else
             binary_name=nzb-monkey-go
           fi
-          GOARCH=${{ matrix.os-arch.arch }} GOOS=${{ matrix.os-arch.os }} go build -ldflags="-X main.version=${{ env.REF_NAME }}" -o builds/${{ matrix.os-arch.name }}/$binary_name
+          GOARCH=${{ matrix.os-arch.arch }} GOOS=${{ matrix.os-arch.os }} go build -ldflags="-s -w -X main.appVersion=${{ env.REF_NAME }}" -o builds/${{ matrix.os-arch.name }}/$binary_name
           zip -j "nzb-monkey-go_${{ env.REF_NAME }}-${{ matrix.os-arch.arch }}-${{ matrix.os-arch.os }}.zip" builds/${{ matrix.os-arch.name }}/$binary_name
       - name: Upload Release Assets
         if: github.event_name == 'release' # Only on release
