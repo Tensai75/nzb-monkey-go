@@ -1,7 +1,6 @@
 name: Build and Publish
 
 on:
-  push:
   release:
     types:
       - published
