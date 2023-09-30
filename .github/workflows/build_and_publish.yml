@@ -65,7 +65,7 @@ jobs:
             # make the non-windows binaries executable
             chmod +x builds/${{ matrix.os-arch.name }}/$binary_name
           fi
-          zip -j "nzb-monkey-go_${{ env.REF_NAME }}-${{ matrix.os-arch.arch }}-${{ matrix.os-arch.os }}.zip" builds/${{ matrix.os-arch.name }}/$binary_name
+          zip -j "nzb-monkey-go_${{ env.REF_NAME }}-${{ matrix.os-arch.os }}-${{ matrix.os-arch.arch }}.zip" builds/${{ matrix.os-arch.name }}/$binary_name
       - name: Upload Release Assets
         if: github.event_name == 'release' # Only on release
         uses: softprops/action-gh-release@v1
