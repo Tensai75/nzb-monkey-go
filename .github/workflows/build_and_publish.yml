@@ -73,7 +73,7 @@ jobs:
             ARCH=${{ matrix.os-arch.arch }}
           fi
           echo "Package: nzb-monkey-go" >> builds/${{ matrix.os-arch.name }}/DEBIAN/control
-          echo "Version: ${VERSION}" >> builds/${{ matrix.os-arch.name }}/DEBIAN/DEBIAN/control
+          echo "Version: ${VERSION}" >> builds/${{ matrix.os-arch.name }}/DEBIAN/control
           echo "Maintainer: ${{ github.repository_owner }} <${{ github.repository_owner_email }}>" >> builds/${{ matrix.os-arch.name }}/DEBIAN/control
           echo "Architecture: ${ARCH}" >> builds/${{ matrix.os-arch.name }}/DEBIAN/control
           echo "Description: NZB Monkey Go - Golang version of the NZB Monkey with included NZB direct search" >> builds/${{ matrix.os-arch.name }}/DEBIAN/control
