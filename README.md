@@ -1,5 +1,5 @@
 [![Release Workflow](https://github.com/Tensai75/nzb-monkey-go/actions/workflows/build_and_publish.yml/badge.svg?event=release)](https://github.com/Tensai75/nzb-monkey-go/actions/workflows/build_and_publish.yml)
-![Latest Release)](https://img.shields.io/github/v/release/Tensai75/nzb-monkey-go?logo=github)
+[![Latest Release)](https://img.shields.io/github/v/release/Tensai75/nzb-monkey-go?logo=github)](https://github.com/Tensai75/nzb-monkey-go/releases/latest)
 
 # NZB Monkey Go
 
