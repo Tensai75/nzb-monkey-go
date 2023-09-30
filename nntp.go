@@ -9,17 +9,19 @@ import (
 )
 
 type safeConn struct {
-	mutex  *sync.Mutex
 	closed bool
 	*nntp.Conn
 }
 
-var connectionGuard chan struct{}
+var (
+	initConnGuard   sync.Once
+	connectionGuard chan struct{}
+)
 
 func ConnectNNTP() (*safeConn, error) {
-	if connectionGuard == nil {
+	initConnGuard.Do(func() {
 		connectionGuard = make(chan struct{}, conf.Directsearch.Connections)
-	}
+	})
 	connectionGuard <- struct{}{} // will block if guard channel is already filled
 	var conn *nntp.Conn
 	var err error
@@ -29,29 +31,29 @@ func ConnectNNTP() (*safeConn, error) {
 		conn, err = nntp.Dial("tcp", conf.Directsearch.Host+":"+strconv.Itoa(conf.Directsearch.Port))
 	}
 	safeConn := safeConn{
-		&mutex,
-		false,
-		conn,
+		Conn: conn,
 	}
 	if err != nil {
-		safeConn.close()
+		safeConn.Close()
 		return nil, fmt.Errorf("Connection to usenet server failed: %v\r\n", err)
 	}
 	if err = safeConn.Authenticate(conf.Directsearch.Username, conf.Directsearch.Password); err != nil {
-		safeConn.close()
+		safeConn.Close()
 		return nil, fmt.Errorf("Authentication with usenet server failed: %v\r\n", err)
 	}
 	return &safeConn, nil
 }
 
-func (c *safeConn) close() {
-	c.mutex.Lock()
+func (c *safeConn) Close() {
+	mutex.Lock()
+	defer mutex.Unlock()
 	if !c.closed {
-		c.Quit()
+		if c.Conn != nil {
+			c.Quit()
+		}
 		if len(connectionGuard) > 0 {
 			<-connectionGuard
 		}
 		c.closed = true
 	}
-	c.mutex.Unlock()
 }
