@@ -58,7 +58,7 @@ func nzbdirectsearch(engine SearchEngine, name string) error {
 	var searchInGroupError error
 
 	for i, group := range args.Groups {
-		if i > 0 && conf.Directsearch.First_group_only && searchInGroupError == nil {
+		if i > 0 && conf.Directsearch.FirstGroupOnly && searchInGroupError == nil {
 			fmt.Println()
 			Log.Info("Skipping other groups based on config settings.")
 			return nil
@@ -106,7 +106,7 @@ func searchInGroup(group string) error {
 		interval += 60 * 60 * 24
 	}
 	startDate = args.UnixDate - int64(interval)
-	endDate = args.UnixDate + int64(60*60*conf.Directsearch.Forward_hours)
+	endDate = args.UnixDate + int64(60*60*conf.Directsearch.ForwardHours)
 	var currentMessageID int
 	conn, firstMessageID, lastMessageID, err := switchToGroup(group)
 	if err != nil {

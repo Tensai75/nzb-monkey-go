@@ -49,13 +49,13 @@ func logSuccess(logText string, vars ...interface{}) {
 func logEntry(logType string, logText string, vars ...interface{}) {
 
 	// init logger if nil
-	if args.Debug == true && logFile == nil {
+	if args.Debug && logFile == nil {
 		initLogger(logFilePath)
 	}
 
 	// log error
 	if logType == "error" {
-		if args.Debug == true {
+		if args.Debug {
 			logger.Printf("ERROR: %s\n", stripansi.Strip(strings.Trim(fmt.Sprintf(logText, vars...), "\n")))
 		}
 		fmt.Printf("   %sERROR:    %s%s\n", color.Red, fmt.Sprintf(logText, vars...), color.Reset)
@@ -63,7 +63,7 @@ func logEntry(logType string, logText string, vars ...interface{}) {
 
 	// log warn
 	if logType == "warn" {
-		if args.Debug == true {
+		if args.Debug {
 			logger.Printf("WARNING: %s\n", stripansi.Strip(strings.Trim(fmt.Sprintf(logText, vars...), "\n")))
 		}
 		fmt.Printf("   %sWARNING:  %s%s\n", color.Yellow, fmt.Sprintf(logText, vars...), color.Reset)
@@ -71,7 +71,7 @@ func logEntry(logType string, logText string, vars ...interface{}) {
 
 	// log info
 	if logType == "info" {
-		if args.Debug == true {
+		if args.Debug {
 			logger.Printf("INFO: %s\n", stripansi.Strip(strings.Trim(fmt.Sprintf(logText, vars...), "\n")))
 		}
 		fmt.Printf("   %s%s%s\n", color.Reset, fmt.Sprintf(logText, vars...), color.Reset)
@@ -79,7 +79,7 @@ func logEntry(logType string, logText string, vars ...interface{}) {
 
 	// log success
 	if logType == "success" {
-		if args.Debug == true {
+		if args.Debug {
 			logger.Printf("INFO: %s\n", stripansi.Strip(strings.Trim(fmt.Sprintf(logText, vars...), "\n")))
 		}
 		fmt.Printf("   %s%s%s\n", color.Green, fmt.Sprintf(logText, vars...), color.Reset)

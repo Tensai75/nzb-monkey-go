@@ -54,6 +54,10 @@ func checkCategories() string {
 						return ""
 					}
 					input, err = strconv.Atoi(str)
+					if err != nil {
+						Log.Error("Not a number: %s", str)
+						continue
+					}
 					if input > 0 && input <= len(categories) {
 						Log.Info("Using category '%s'", categories[input-1])
 						return categories[input-1]
