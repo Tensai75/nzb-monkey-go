@@ -40,6 +40,11 @@ Please also note that the macOS binary is neither signed nor executable.
 Feel free to send pull requests.
 
 ## Change log
+#### v0.1.7
+- fix for panic upon connection errors and various problems with connection pool (Thanks @[wilriker](https://github.com/wilriker)) [fixes https://github.com/Tensai75/nzb-monkey-go/issues/14]
+- minor code refactoring and clean-ups (Thanks @[wilriker](https://github.com/wilriker))
+- addition of a GitHub Action for automatic builds for several architectures, including debian packages for linux and darwin builds (Thanks @[reloxx13](https://github.com/reloxx13))
+
 #### v0.1.6
 - possible bug fix for the occasional "too many connections" errors
 - bug fix for the progress bar not progressing for further groups after first group was scanned
