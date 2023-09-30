@@ -1,0 +1,94 @@
+name: Build and Publish
+
+on:
+  push:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os-arch:
+          - name: Linux-amd64
+            os: linux
+            arch: amd64
+          - name: macOS-amd64
+            os: darwin
+            arch: amd64
+          - name: macOS-arm64
+            os: darwin
+            arch: arm64
+          - name: Windows-amd64
+            os: windows
+            arch: amd64
+          - name: Windows-386
+            os: windows
+            arch: 386 # 32bit
+          - name: Linux-arm
+            os: linux
+            arch: arm
+          - name: Linux-arm64
+            os: linux
+            arch: arm64
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: 'go.mod' # Use the Go version specified in go.mod
+      - name: Set Ref Name Variable
+        run: |
+          if [ "$GITHUB_EVENT_NAME" != "release" ]; then
+            # Use Git commit SHA as the reference when manually triggered
+            ref_name=${GITHUB_SHA::7}
+          else
+            ref_name=${{ github.ref_name }}
+          fi
+          echo "REF_NAME=${ref_name}" >> "$GITHUB_ENV"
+      - name: Build for ${{ matrix.os-arch.name }}
+        run: |
+          mkdir -p builds/${{ matrix.os-arch.name }}/usr/bin
+          if [ "${{ matrix.os-arch.os }}" == "windows" ]; then
+            # For Windows, add .exe to the binary name
+            binary_name=nzb-monkey-go.exe
+          else
+            binary_name=nzb-monkey-go
+          fi
+          GOARCH=${{ matrix.os-arch.arch }} GOOS=${{ matrix.os-arch.os }} go build -ldflags="-s -w -X main.appVersion=${{ env.REF_NAME }}" -o builds/${{ matrix.os-arch.name }}/usr/bin/$binary_name
+          zip -j "nzb-monkey-go_${{ env.REF_NAME }}-${{ matrix.os-arch.os }}-${{ matrix.os-arch.arch }}.zip" builds/${{ matrix.os-arch.name }}/usr/bin/$binary_name
+          # Makeing deb packages for linux and darwin
+          if [ "${{ matrix.os-arch.os }}" == "linux"  ] || [ "${{ matrix.os-arch.os }}" == "darwin"  ]; then
+            mkdir -p builds/${{ matrix.os-arch.name }}/DEBIAN
+            VERSION=$(echo "${{ github.ref_name }}" | sed 's/^v//')
+            if [ "${{ matrix.os-arch.os }}" == "darwin" ]; then
+              ARCH=${{ matrix.os-arch.os }}-${{ matrix.os-arch.arch }}
+            else
+              ARCH=${{ matrix.os-arch.arch }}
+            fi
+            echo "Package: nzb-monkey-go" >> builds/${{ matrix.os-arch.name }}/DEBIAN/control
+            echo "Version: ${VERSION}" >> builds/${{ matrix.os-arch.name }}/DEBIAN/control
+            echo "Maintainer: ${{ github.repository_owner }} <${{ github.repository_owner_email }}>" >> builds/${{ matrix.os-arch.name }}/DEBIAN/control
+            echo "Architecture: ${ARCH}" >> builds/${{ matrix.os-arch.name }}/DEBIAN/control
+            echo "Description: NZB Monkey Go - Golang version of the NZB Monkey with included NZB direct search" >> builds/${{ matrix.os-arch.name }}/DEBIAN/control
+            dpkg-deb --build builds/${{ matrix.os-arch.name }} nzb-monkey-go_${{ env.REF_NAME }}-${{ matrix.os-arch.os }}-${{ matrix.os-arch.arch }}.deb
+          fi
+      - name: Upload Release Assets
+        if: github.event_name == 'release' # Only on release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            nzb-monkey-go_*.zip
+            nzb-monkey-go_*.deb
+      - name: Upload Artifact for ${{ matrix.os-arch.name }}
+        # if: github.event_name == 'workflow_dispatch' # Only on manual trigger
+        uses: actions/upload-artifact@v3
+        with:
+          name: nzb-monkey-go_${{ env.REF_NAME }}-${{ matrix.os-arch.os }}-${{ matrix.os-arch.arch }}
+          path: |
+            builds/${{ matrix.os-arch.name }}/usr/bin/nzb-monkey-go*
