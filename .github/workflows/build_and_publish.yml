@@ -62,22 +62,22 @@ jobs:
           fi
           GOARCH=${{ matrix.os-arch.arch }} GOOS=${{ matrix.os-arch.os }} go build -ldflags="-s -w -X main.appVersion=${{ env.REF_NAME }}" -o builds/${{ matrix.os-arch.name }}/usr/bin/$binary_name
           zip -j "nzb-monkey-go_${{ env.REF_NAME }}-${{ matrix.os-arch.os }}-${{ matrix.os-arch.arch }}.zip" builds/${{ matrix.os-arch.name }}/usr/bin/$binary_name
-      - name: Makeing deb packages for linux and darwin
-        if: matrix.os-arch.os == 'linux' || matrix.os-arch.os == 'darwin'
-        run: |
-          mkdir -p builds/${{ matrix.os-arch.name }}/DEBIAN
-          VERSION=$(echo "${{ github.ref_name }}" | sed 's/^v//')
-          if [ "${{ matrix.os-arch.os }}" == "darwin" ]; then
-            ARCH=${{ matrix.os-arch.os }}-${{ matrix.os-arch.arch }}
-          else
-            ARCH=${{ matrix.os-arch.arch }}
+          # Makeing deb packages for linux and darwin
+          if [ "${{ matrix.os-arch.os }}" == "linux"  ] || [ "${{ matrix.os-arch.os }}" == "darwin"  ]; then
+            mkdir -p builds/${{ matrix.os-arch.name }}/DEBIAN
+            VERSION=$(echo "${{ github.ref_name }}" | sed 's/^v//')
+            if [ "${{ matrix.os-arch.os }}" == "darwin" ]; then
+              ARCH=${{ matrix.os-arch.os }}-${{ matrix.os-arch.arch }}
+            else
+              ARCH=${{ matrix.os-arch.arch }}
+            fi
+            echo "Package: nzb-monkey-go" >> builds/${{ matrix.os-arch.name }}/DEBIAN/control
+            echo "Version: ${VERSION}" >> builds/${{ matrix.os-arch.name }}/DEBIAN/control
+            echo "Maintainer: ${{ github.repository_owner }} <${{ github.repository_owner_email }}>" >> builds/${{ matrix.os-arch.name }}/DEBIAN/control
+            echo "Architecture: ${ARCH}" >> builds/${{ matrix.os-arch.name }}/DEBIAN/control
+            echo "Description: NZB Monkey Go - Golang version of the NZB Monkey with included NZB direct search" >> builds/${{ matrix.os-arch.name }}/DEBIAN/control
+            dpkg-deb --build builds/${{ matrix.os-arch.name }} nzb-monkey-go_${{ env.REF_NAME }}-${{ matrix.os-arch.os }}-${{ matrix.os-arch.arch }}.deb
           fi
-          echo "Package: nzb-monkey-go" >> builds/${{ matrix.os-arch.name }}/DEBIAN/control
-          echo "Version: ${VERSION}" >> builds/${{ matrix.os-arch.name }}/DEBIAN/control
-          echo "Maintainer: ${{ github.repository_owner }} <${{ github.repository_owner_email }}>" >> builds/${{ matrix.os-arch.name }}/DEBIAN/control
-          echo "Architecture: ${ARCH}" >> builds/${{ matrix.os-arch.name }}/DEBIAN/control
-          echo "Description: NZB Monkey Go - Golang version of the NZB Monkey with included NZB direct search" >> builds/${{ matrix.os-arch.name }}/DEBIAN/control
-          dpkg-deb --build builds/${{ matrix.os-arch.name }} nzb-monkey-go_${{ env.REF_NAME }}-${{ matrix.os-arch.os }}-${{ matrix.os-arch.arch }}.deb
       - name: Upload Release Assets
         if: github.event_name == 'release' # Only on release
         uses: softprops/action-gh-release@v1
