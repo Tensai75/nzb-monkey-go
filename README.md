@@ -37,6 +37,13 @@ Please also note that the macOS binaries are not signed.
 Feel free to send pull requests.
 
 ## Change log
+#### v0.1.8
+- fix for the "not well-formed (invalid token)" error when the inner XML text contains special HTML characters
+- fix for the wrong search interval and other problems when searching for first and last message number
+- additional output of information during scanning (first/last found message number and message number scan range)
+- addition of the time zone when displaying date and time
+- minor changes
+
 #### v0.1.7
 - fix for panic upon connection errors and various problems with connection pool (Thanks @[wilriker](https://github.com/wilriker)) [fixes https://github.com/Tensai75/nzb-monkey-go/issues/14]
 - minor code refactoring and clean-ups (Thanks @[wilriker](https://github.com/wilriker))
