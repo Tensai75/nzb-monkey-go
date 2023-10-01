@@ -127,12 +127,13 @@ func checkArguments() {
 	// date argument needs to be parsed because it can have two formats
 	if args.Date != "" {
 		dateRegexDate := regexp.MustCompile(`^[0-3]\d\.[0-1]\d\.(?:19|20)\d\d$`)
-		dateRegexTimestamp := regexp.MustCompile(`^[1-9]\d{9}$`) // starting from Sep 09 2001 01:46:40 GMT+0000
+		dateRegexTimestamp := regexp.MustCompile(`^[1-9]\d{9}$`)
 		var parseError error
 		if match := dateRegexDate.FindStringIndex(args.Date); match != nil {
 			var date time.Time
-			if date, parseError = time.Parse("02.01.2006", args.Date); parseError == nil {
-				args.UnixDate = date.Unix() + (60 * 60 * 23) - 1 // add a day minus 1 sec so it is 23:59:59
+			zone, _ := time.Now().Zone()
+			if date, parseError = time.Parse("02.01.2006 MST", fmt.Sprintf("%s %s", args.Date, zone)); parseError == nil {
+				args.UnixDate = date.Unix()
 			}
 		} else if match := dateRegexTimestamp.FindStringIndex(args.Date); match != nil {
 			args.UnixDate, parseError = strconv.ParseInt(args.Date, 10, 64)

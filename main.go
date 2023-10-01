@@ -98,7 +98,11 @@ func main() {
 		Log.Info("Groups:   %s%s%s", color.Blue, strings.Join(args.Groups[:], ", "), color.Reset)
 	}
 	if args.UnixDate > 0 {
-		Log.Info("Date:     %s%s%s", color.Blue, time.Unix(args.UnixDate, 0).Format("02.01.2006 15:04:05"), color.Reset)
+		if args.IsTimestamp {
+			Log.Info("Date:     %s%s%s", color.Blue, time.Unix(args.UnixDate, 0).Format("02.01.2006 15:04:05 MST"), color.Reset)
+		} else {
+			Log.Info("Date:     %s%s%s", color.Blue, time.Unix(args.UnixDate, 0).Format("02.01.2006"), color.Reset)
+		}
 	}
 	if args.Category != "" {
 		Log.Info("Category: %s%s%s", color.Blue, args.Category, color.Reset)

@@ -15,6 +15,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/Tensai75/nntp"
 	"github.com/Tensai75/nzb-monkey-go/nzbparser"
 	"github.com/Tensai75/nzb-monkey-go/subjectparser"
 	progressbar "github.com/schollz/progressbar/v3"
@@ -101,36 +102,40 @@ func searchInGroup(group string) error {
 	var searchesCtx, searchesCancel = context.WithCancel(context.Background())
 	defer searchesCancel() // Make sure it's called to release resources even if no errors
 	var step = conf.Directsearch.Step
-	var interval = conf.Directsearch.Hours * 60 * 60
-	if !args.IsTimestamp {
-		interval += 60 * 60 * 24
-	}
-	startDate = args.UnixDate - int64(interval)
+	startDate = args.UnixDate - int64(conf.Directsearch.Hours*60*60)
 	endDate = args.UnixDate + int64(60*60*conf.Directsearch.ForwardHours)
+	if !args.IsTimestamp {
+		endDate += 60 * 60 * 24
+	}
 	var currentMessageID int
+	var messageDate time.Time
 	conn, firstMessageID, lastMessageID, err := switchToGroup(group)
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
-	Log.Info("Scanning from %s to %s", time.Unix(startDate, 0).Format("02.01.2006 15:04:05"), time.Unix(endDate, 0).Format("02.01.2006 15:04:05"))
-	currentMessageID, _, err = scanForDate(conn, firstMessageID, lastMessageID, -interval, true, "   Scanning for first message ID ...")
+	Log.Info("Scanning from %s to %s", time.Unix(startDate, 0).Format("02.01.2006 15:04:05 MST"), time.Unix(endDate, 0).Format("02.01.2006 15:04:05 MST"))
+	currentMessageID, messageDate, err = scanForDate(conn, firstMessageID, lastMessageID, startDate, endDate, true, "   Scanning for first message number ...")
 	if err != nil {
 		return fmt.Errorf("Error while scanning group '%s' for the first message: %v\n", group, err)
 	}
-	lastMessageID, _, err = scanForDate(conn, firstMessageID, lastMessageID, 0, false, "   Scanning for last message ID ... ")
+	Log.Info("Found first message number: %v / Date: %v", currentMessageID, messageDate.Local().Format("02.01.2006 15:04:05 MST"))
+	lastMessageID, messageDate, err = scanForDate(conn, firstMessageID, lastMessageID, endDate, endDate, false, "   Scanning for last message number ... ")
 	if err != nil {
 		return fmt.Errorf("Error while scanning group '%s' for the last message: %v\n", group, err)
 	}
 	if currentMessageID >= lastMessageID {
 		return errors.New("no messages found within search range")
 	}
+	Log.Info("Found last message number: %v / Date: %v", lastMessageID, messageDate.Local().Format("02.01.2006 15:04:05 MST"))
 	conn.Close()
+	Log.Info("Scanning messages %v to %v", currentMessageID, lastMessageID)
 	directsearchCounter = 0
 	bar := progressbar.NewOptions(lastMessageID-currentMessageID,
-		progressbar.OptionSetDescription("   Scanning messages ...            "),
+		progressbar.OptionSetDescription("   Scanning messages ...                "),
 		progressbar.OptionSetRenderBlankState(true),
 		progressbar.OptionThrottle(time.Millisecond*100),
+		progressbar.OptionShowElapsedTimeOnFinish(),
 	)
 	go func(bar *progressbar.ProgressBar, ctx context.Context) {
 		for {
@@ -267,56 +272,75 @@ func searchMessages(ctx context.Context, firstMessage int, lastMessage int, grou
 	return nil
 }
 
-func scanForDate(conn *safeConn, firstMessageID int, lastMessageID int, interval int, first bool, text string) (int, time.Time, error) {
-	bar := progressbar.NewOptions(lastMessageID-firstMessageID,
+func scanForDate(conn *safeConn, firstMessageID int, lastMessageID int, startDate int64, endDate int64, first bool, text string) (int, time.Time, error) {
+	bar := progressbar.NewOptions((lastMessageID - firstMessageID),
 		progressbar.OptionSetDescription(text),
 		progressbar.OptionSetRenderBlankState(true),
 		progressbar.OptionThrottle(time.Millisecond*100),
+		progressbar.OptionShowElapsedTimeOnFinish(),
 	)
 	defer func() {
 		bar.Finish()
 		fmt.Println()
 	}()
+	var currentDate int64
 	currentMessageID := firstMessageID
 	endMessageID := lastMessageID
 	scanStep := endMessageID - currentMessageID
+	overviewStep := 10
 	for currentMessageID <= endMessageID {
-		step := 0
-		if currentMessageID == firstMessageID {
-			step = 2000
-		}
 		if scanStep < 1000 {
-			results, err := conn.Overview(currentMessageID-1000, currentMessageID+1000)
+			results, err := conn.Overview(currentMessageID-scanStep-1, currentMessageID+scanStep+1)
 			if err != nil {
 				return 0, time.Time{}, err
 			}
-			for _, overview := range results {
+			for i, overview := range results {
 				bar.Add(1)
-				if overview.Date.Unix() > endDate+int64(interval) {
-					return overview.MessageNumber, overview.Date, nil
+				if overview.Date.Unix() > startDate {
+					if first || i == 0 {
+						return overview.MessageNumber, overview.Date, nil
+					} else {
+						return results[i-1].MessageNumber, results[i-1].Date, nil
+					}
 				}
 			}
-			return results[len(results)-1].MessageNumber, results[len(results)-1].Date, nil
+			return 0, time.Time{}, fmt.Errorf("start date of search range is newer than latest message of this group")
 		} else {
-			results, err := conn.Overview(currentMessageID, currentMessageID+step)
-			if err != nil {
-				return 0, time.Time{}, err
+			var results []nntp.MessageOverview
+			var stepMultiplier = 1
+			var step int
+			var lastStep bool
+			for results == nil && !lastStep {
+				var err error
+				step = overviewStep * stepMultiplier
+				if currentMessageID+step > lastMessageID {
+					step = lastMessageID - currentMessageID
+					lastStep = true
+				}
+				results, err = getOverview(conn, currentMessageID, step)
+				if err != nil {
+					if err.Error() == "420 No Articles Selected" {
+						stepMultiplier *= 10
+					} else {
+						return 0, time.Time{}, err
+					}
+				}
 			}
 			if len(results) == 0 {
-				return 0, time.Time{}, fmt.Errorf("Overview results are empty")
+				return currentMessageID, time.Unix(currentDate, 0), nil
 			}
 			overview := results[0]
-			currentDate := overview.Date.Unix()
-			scanStep = scanStep / 2
-			if first && currentMessageID == firstMessageID && currentDate > endDate+int64(interval) {
+			currentDate = overview.Date.Unix()
+			scanStep = (scanStep / 2) + 1
+			if first && currentMessageID == firstMessageID && currentDate > endDate {
+				return 0, time.Time{}, fmt.Errorf("end date of search range is older than oldest message of this group")
+			} else if first && currentMessageID == firstMessageID && currentDate > startDate {
 				return overview.MessageNumber, overview.Date, nil
-			} else if !first && currentMessageID == firstMessageID && currentDate > endDate+int64(interval) {
-				return 0, time.Time{}, fmt.Errorf("post date is older than oldest message of this group")
 			}
-			if currentDate < endDate+int64(interval) {
+			if currentDate < startDate {
 				currentMessageID = currentMessageID + scanStep
 			}
-			if currentDate > endDate+int64(interval) {
+			if currentDate > startDate {
 				currentMessageID = currentMessageID - scanStep
 			}
 		}
@@ -336,6 +360,10 @@ func switchToGroup(group string) (*safeConn, int, int, error) {
 		return nil, 0, 0, fmt.Errorf("Error retrieving group information for group '%s' from the usenet server: %v\n", group, err)
 	}
 	return conn, firstMessageID, lastMessageID, nil
+}
+
+func getOverview(conn *safeConn, currentMessageID int, step int) ([]nntp.MessageOverview, error) {
+	return conn.Overview(currentMessageID, currentMessageID+step)
 }
 
 func GetMD5Hash(text string) string {
