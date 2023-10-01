@@ -20,14 +20,14 @@ func checkCategories() string {
 	if conf.General.Categorize == "auto" {
 		fmt.Println()
 		Log.Info("Automatic checking for categories ...")
-		for category, regex := range conf.Categories {
-			if categoryRegexp, err := regexp.Compile("(?i)" + regex); err == nil {
+		for _, category := range conf.Categories {
+			if categoryRegexp, err := regexp.Compile("(?i)" + category.regex); err == nil {
 				if categoryRegexp.Match([]byte(args.Title)) {
-					Log.Info("Using category '%s'", category)
-					return category
+					Log.Info("Using category '%s'", category.name)
+					return category.name
 				}
 			} else {
-				Log.Warn("Error in the Regexp for '%s'", category)
+				Log.Warn("Error in the Regexp for '%s'", category.name)
 			}
 		}
 		Log.Warn("No category did match")

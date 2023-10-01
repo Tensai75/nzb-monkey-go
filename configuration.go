@@ -64,8 +64,11 @@ type Configuration struct {
 		MaxMissingFiles           int     `ini:"max_missing_files"`
 		BestNZB                   bool    `ini:"best_nzb"`
 	} `ini:"NZBCheck"`
-	Categories    map[string]string `ini:"-"` // will hold the categories regex patterns
-	Searchengines []string          `ini:"-"` // will hold the search engines
+	Categories []struct {
+		name  string
+		regex string
+	} `ini:"-"` // will hold the categories regex patterns
+	Searchengines []string `ini:"-"` // will hold the search engines
 	Directsearch  struct {
 		Host           string `ini:"host"`
 		Port           int    `ini:"port"`
@@ -107,10 +110,12 @@ func loadConfig() {
 	}
 
 	// load categories
-	conf.Categories = make(map[string]string)
 	if cfg.HasSection("CATEGORIZER") {
 		for _, key := range cfg.Section("CATEGORIZER").Keys() {
-			conf.Categories[key.Name()] = key.Value()
+			conf.Categories = append(conf.Categories, struct {
+				name  string
+				regex string
+			}{name: key.Name(), regex: key.Value()})
 		}
 	}
 
