@@ -38,6 +38,7 @@ Feel free to send pull requests.
 
 ## Change log
 #### v0.1.8
+- fix for wrong category assignment [fixes https://github.com/Tensai75/nzb-monkey-go/issues/18]
 - fix for the "not well-formed (invalid token)" error when the inner XML text contains special HTML characters
 - fix for the wrong search interval and other problems when searching for first and last message number
 - additional output of information during scanning (first/last found message number and message number scan range)
