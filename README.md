@@ -27,7 +27,7 @@ For Arch Linux / Manjao user a AUR package is kindly provided by [nzb-tuxxx](htt
 
 ### macOS Support
 
-A macOS binaries are provided on the [release page](https://github.com/Tensai75/nzb-monkey-go/releases) as well, however the program cannot register the nzblnk URI protocol itself.
+The macOS binaries are provided on the [release page](https://github.com/Tensai75/nzb-monkey-go/releases) as well, however the program cannot register the nzblnk URI protocol itself.
 On the NZB Monkey github some solutions on how to register the protocol have been [discussed](https://github.com/nzblnk/nzb-monkey/issues/20) which should work for the NZB Monkey Go as well.
 
 Please also note that the macOS binaries are not signed.
