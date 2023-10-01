@@ -250,7 +250,7 @@ func searchMessages(ctx context.Context, firstMessage int, lastMessage int, grou
 				}
 				file := directsearchHits[headerHash][fileHash]
 				if file.Groups[len(file.Groups)-1] != group {
-					file.Groups = append(file.Groups, group)
+					file.Groups = append(file.Groups, html.EscapeString(group))
 				}
 				if subject.Segment == 1 {
 					file.Subject = subject.Subject
@@ -260,7 +260,7 @@ func searchMessages(ctx context.Context, firstMessage int, lastMessage int, grou
 				}
 				file.Segments = append(file.Segments, nzbparser.NzbSegment{
 					Number: subject.Segment,
-					Id:     strings.Trim(overview.MessageId, "<>"),
+					Id:     html.EscapeString(strings.Trim(overview.MessageId, "<>")),
 					Bytes:  overview.Bytes,
 				})
 				directsearchHits[headerHash][fileHash] = file

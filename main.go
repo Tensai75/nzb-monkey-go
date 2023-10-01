@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"html"
 	"math"
 	"os"
 	"os/signal"
@@ -182,9 +183,9 @@ func processFoundNzb(nzb *Result) {
 	if nzb.Nzb.Meta == nil {
 		nzb.Nzb.Meta = make(map[string]string)
 	}
-	nzb.Nzb.Meta["title"] = args.Title
+	nzb.Nzb.Meta["title"] = html.EscapeString(args.Title)
 	if args.Password != "" {
-		nzb.Nzb.Meta["password"] = args.Password
+		nzb.Nzb.Meta["password"] = html.EscapeString(args.Password)
 	}
 	var err error
 	var nzbfile string
