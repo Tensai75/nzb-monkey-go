@@ -120,7 +120,9 @@ func Write(nzb *Nzb) ([]byte, error) {
 	xnzb := new(xNzb)
 
 	// copy elements
-	xnzb.Comment = " " + nzb.Comment + " "
+	if nzb.Comment != "" {
+		xnzb.Comment = " " + nzb.Comment + " "
+	}
 	xnzb.Files = nzb.Files
 
 	// add namespace
