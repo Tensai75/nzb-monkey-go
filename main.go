@@ -53,7 +53,7 @@ func init() {
 	// change working directory
 	// important for url protocol handling (otherwise work dir will be system32 on windows)
 	if err := os.Chdir(appPath); err != nil {
-		fmt.Println("cannot change working directory: ", err)
+		Log.Error("Cannot change working directory: ", err)
 		os.Exit(1)
 	}
 
