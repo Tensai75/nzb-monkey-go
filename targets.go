@@ -101,8 +101,8 @@ func request(conf interface{}, httpMethod string, path string, headers map[strin
 	}
 
 	// if basic auth username and password are set add auth header
-	if values.FieldByName("Basicauth_username").String() != "" && values.FieldByName("Basicauth_password").String() != "" {
-		req.SetBasicAuth(values.FieldByName("Basicauth_username").String(), values.FieldByName("Basicauth_password").String())
+	if values.FieldByName("BasicauthUsername").String() != "" && values.FieldByName("BasicauthPassword").String() != "" {
+		req.SetBasicAuth(values.FieldByName("BasicauthUsername").String(), values.FieldByName("BasicauthPassword").String())
 	}
 
 	// finally, do the request
