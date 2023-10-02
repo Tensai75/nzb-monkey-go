@@ -37,6 +37,9 @@ Please also note that the macOS binaries are not signed.
 Feel free to send pull requests.
 
 ## Change log
+#### v0.1.9
+- fix for Basic Auth not working after code refactoring
+
 #### v0.1.8
 - fix for wrong category assignment [fixes https://github.com/Tensai75/nzb-monkey-go/issues/18]
 - fix for the "not well-formed (invalid token)" error when the inner XML text contains special HTML characters
