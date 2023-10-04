@@ -18,12 +18,13 @@ import (
 )
 
 type Result struct {
-	SearchEngine     string
-	Nzb              *nzbparser.Nzb
-	FilesMissing     int
-	FilesComplete    bool
-	SegmentsMissing  float64
-	SegmentsComplete bool
+	SearchEngine           string
+	Nzb                    *nzbparser.Nzb
+	FilesMissing           int
+	FilesComplete          bool
+	SegmentsMissing        int
+	SegmentsMissingPercent float64
+	SegmentsComplete       bool
 }
 
 // global variables
@@ -126,7 +127,7 @@ func main() {
 				return results[i].FilesMissing < results[j].FilesMissing
 			}
 			// ... and then by segments missing
-			return results[i].SegmentsMissing < results[j].SegmentsMissing
+			return results[i].SegmentsMissingPercent < results[j].SegmentsMissingPercent
 		})
 		processFoundNzb(&results[0])
 	} else {
@@ -139,12 +140,13 @@ func main() {
 
 func processResult(nzb *nzbparser.Nzb, name string) {
 	result := Result{
-		SearchEngine:     name,
-		Nzb:              nzb,
-		FilesMissing:     nzb.TotalFiles - nzb.Files.Len(),
-		FilesComplete:    nzb.TotalFiles-nzb.Files.Len() <= conf.Nzbcheck.MaxMissingFiles,
-		SegmentsMissing:  float64(float64(nzb.TotalSegments-nzb.Segments) / float64(nzb.TotalSegments) * 100),
-		SegmentsComplete: float64(float64(nzb.TotalSegments-nzb.Segments)/float64(nzb.TotalSegments)*100) <= conf.Nzbcheck.MaxMissingSegmentsPercent,
+		SearchEngine:           name,
+		Nzb:                    nzb,
+		FilesMissing:           nzb.TotalFiles - nzb.Files.Len(),
+		FilesComplete:          nzb.TotalFiles-nzb.Files.Len() <= conf.Nzbcheck.MaxMissingFiles,
+		SegmentsMissing:        nzb.TotalSegments - nzb.Segments,
+		SegmentsMissingPercent: float64(float64(nzb.TotalSegments-nzb.Segments) / float64(nzb.TotalSegments) * 100),
+		SegmentsComplete:       float64(float64(nzb.TotalSegments-nzb.Segments)/float64(nzb.TotalSegments)*100) <= conf.Nzbcheck.MaxMissingSegmentsPercent,
 	}
 	var filesColor string
 	if result.FilesComplete {
@@ -160,10 +162,10 @@ func processResult(nzb *nzbparser.Nzb, name string) {
 	}
 	Log.Info("Found:    %s%s (%s)%s", color.Green, result.Nzb.Files[0].Subject, humanize.Bytes(uint64(result.Nzb.Bytes)), color.Reset)
 	Log.Info("Files:    %s%d/%d (Missing files: %d)%s", filesColor, result.Nzb.Files.Len(), result.Nzb.TotalFiles, result.FilesMissing, color.Reset)
-	Log.Info("Segments: %s%d/%d (Missing segments: %f %%)%s", segmentsColor, result.Nzb.Segments, result.Nzb.TotalSegments, result.SegmentsMissing, color.Reset)
+	Log.Info("Segments: %s%d/%d (Missing segments: %f %%)%s", segmentsColor, result.Nzb.Segments, result.Nzb.TotalSegments, result.SegmentsMissingPercent, color.Reset)
 
 	if !conf.Nzbcheck.SkipFailed || (result.FilesComplete && result.SegmentsComplete) {
-		if !conf.Nzbcheck.BestNZB {
+		if !conf.Nzbcheck.BestNZB || (result.FilesMissing == 0 && result.SegmentsMissing == 0) {
 			processFoundNzb(&result)
 		} else {
 			results = append(results, result)
