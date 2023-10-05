@@ -96,7 +96,7 @@ skip_failed = true
 max_missing_segments_percent = 1
 # Max missing failed files
 max_missing_files = 1
-# Use always all Searchengines to find the best NZB
+# Use always all Searchengines to find the best NZB but stop once a NZB with 100% completeness has been found.
 best_nzb = true
 
 [CATEGORIZER]
