@@ -37,6 +37,10 @@ Please also note that the macOS binaries are not signed.
 Feel free to send pull requests.
 
 ## Change log
+#### v0.1.10
+- fix for wrong error "start date of search range is newer than latest message" [fixes https://github.com/Tensai75/nzb-monkey-go/issues/20]
+- new behavior: the direct search stops searching after a 100% complete NZB file has been found if best_nzb = true (Thanks @[wilriker](https://github.com/wilriker)). This makes perfectly sense because the first NZB who was found to be 100% complete would be used anyway also if all further search engines were searched as well.
+
 #### v0.1.9
 - fix for Basic Auth not working after code refactoring
 
