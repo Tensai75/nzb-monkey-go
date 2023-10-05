@@ -304,7 +304,11 @@ func scanForDate(conn *safeConn, firstMessageID int, lastMessageID int, startDat
 					}
 				}
 			}
-			return 0, time.Time{}, fmt.Errorf("start date of search range is newer than latest message of this group")
+			if first && results[len(results)-1].MessageNumber >= lastMessageID && results[len(results)-1].Date.Unix() < startDate {
+				return 0, time.Time{}, fmt.Errorf("start date of search range is newer than latest message of this group")
+			} else {
+				return results[len(results)-1].MessageNumber, results[len(results)-1].Date, nil
+			}
 		} else {
 			var results []nntp.MessageOverview
 			var stepMultiplier = 1
