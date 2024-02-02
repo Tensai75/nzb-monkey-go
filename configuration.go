@@ -126,12 +126,11 @@ func loadConfig() {
 			if _, ok := searchEngines[key.Name()]; ok {
 				value, err := strconv.Atoi(key.Value())
 				if err != nil {
-					Log.Error("Unknown value for searchengine '%s' in configuration file: %s", key.Name(), key.Value())
-					exit(1)
-				}
-				// only load the available searchengines to be used
-				if _, ok := searchEngines[key.Name()]; ok && value != 0 {
-					searchengines[key.Name()] = value
+					Log.Warn("Unknown value for searchengine '%s' in configuration file: %s", key.Name(), key.Value())
+				} else {
+					if value != 0 {
+						searchengines[key.Name()] = value
+					}
 				}
 			} else {
 				if key.Name() == "binsearch_alternative" {
