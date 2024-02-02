@@ -79,7 +79,11 @@ func htmlSearch(engine SearchEngine, name string) error {
 						if nzb, err := nzbparser.ParseString(body); err != nil {
 							return err
 						} else {
-							processResult(nzb, name)
+							if nzb.Files.Len() > 0 {
+								processResult(nzb, name)
+							} else {
+								return fmt.Errorf("The returned NZB file is empty")
+							}
 						}
 					}
 				}
@@ -125,7 +129,11 @@ func jsonSearch(engine SearchEngine, name string) error {
 				if nzb, err := nzbparser.ParseString(body); err != nil {
 					return err
 				} else {
-					processResult(nzb, name)
+					if nzb.Files.Len() > 0 {
+						processResult(nzb, name)
+					} else {
+						return fmt.Errorf("The returned NZB file is empty")
+					}
 				}
 			} else {
 				return err
