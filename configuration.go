@@ -141,6 +141,10 @@ func loadConfig() {
 				}
 			}
 		}
+		if len(searchengines) == 0 {
+			Log.Error("No searchengine set in configuration file")
+			exit(1)
+		}
 		// sort the searchengines
 		engines := make([]string, 0, len(searchengines))
 		for engine := range searchengines {
