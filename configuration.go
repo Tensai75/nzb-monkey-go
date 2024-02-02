@@ -134,8 +134,11 @@ func loadConfig() {
 					searchengines[key.Name()] = value
 				}
 			} else {
-				Log.Error("Unknown searchengine '%s' in configuration file", key.Name())
-				exit(1)
+				if key.Name() == "binsearch_alternative" {
+					Log.Warn("Searchengine '%s' is no longer available", key.Name())
+				} else {
+					Log.Warn("Unknown searchengine '%s' in configuration file", key.Name())
+				}
 			}
 		}
 		// sort the searchengines

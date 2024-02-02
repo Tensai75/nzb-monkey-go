@@ -115,8 +115,6 @@ nzbindex =  1
 nzbking =  2
 # Enable Binsearch
 binsearch =  3
-# Enable Binsearch - Alternative Server
-binsearch_alternative = 3
 # Enable nzb direct search (settings for the nzb direct search required)
 directsearch = 4
 
