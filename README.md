@@ -37,6 +37,13 @@ Please also note that the macOS binaries are not signed.
 Feel free to send pull requests.
 
 ## Change log
+#### v0.1.11
+- update of binsearch.info urls (new API)
+- removal of binsearch alternative servers (no longer available)
+- fix for panic if an NZB file with no file entries is returned
+- fix for panic if no searchengine is set in the configuration file
+- new behavior: don't exit in case of unknown values for the searchengines
+
 #### v0.1.10
 - fix for wrong error "start date of search range is newer than latest message" [fixes https://github.com/Tensai75/nzb-monkey-go/issues/20]
 - new behavior: the program stops searching after a 100% complete NZB file has been found if best_nzb = true (Thanks @[wilriker](https://github.com/wilriker)). This makes perfectly sense because the first NZB who was found to be 100% complete would be used anyway also if all further search engines were searched as well.
