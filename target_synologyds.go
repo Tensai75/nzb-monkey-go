@@ -9,8 +9,6 @@ import (
 	"net/url"
 	"strings"
 	"time"
-
-	color "github.com/TwiN/go-color"
 )
 
 // ds response structure
@@ -34,7 +32,8 @@ type dsOptions struct {
 // function to push the nzb file to the queue
 func synologyds_push(nzb string, category string) error {
 
-	fmt.Printf("\n   Pushing the NZB file to Synology DownloadStation...\n")
+	fmt.Println()
+	Log.Info("Pushing the NZB file to Synology DownloadStation...")
 
 	if result, err := synologyds_authenticate(); err != nil {
 		return err
@@ -78,7 +77,7 @@ func synologyds_push(nzb string, category string) error {
 				return err
 			} else {
 				if jsonResponse.Success {
-					fmt.Printf("%s   SUCCESS:  The NZB file was pushed to Synology DownloadStation %s\n", color.Green, color.Reset)
+					Log.Succ("The NZB file was pushed to Synology DownloadStation")
 					return nil
 				} else if jsonResponse.Error.Code > 0 {
 					return synologyds_checkError(int(jsonResponse.Error.Code))

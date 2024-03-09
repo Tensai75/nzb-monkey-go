@@ -8,8 +8,6 @@ import (
 	"mime/multipart"
 	"net/url"
 	"strings"
-
-	color "github.com/TwiN/go-color"
 )
 
 // target functions for SABnzbd
@@ -48,7 +46,8 @@ func sabnzbd_getCategories() (Categories, error) {
 // function to push the nzb file to the queue
 func sabnzbd_push(nzb string, category string) error {
 
-	fmt.Printf("\n   Pushing the NZB file to SABnzbd...\n")
+	fmt.Println()
+	Log.Info("Pushing the NZB file to SABnzbd...")
 
 	// response structure
 	type responseStruct struct {
@@ -99,7 +98,7 @@ func sabnzbd_push(nzb string, category string) error {
 			return err
 		} else {
 			if jsonResponse.Status && len(jsonResponse.Nzo_ids) > 0 {
-				fmt.Printf("%s   SUCCESS:  The NZB file was pushed to SABnzbd %s\n", color.Green, color.Reset)
+				Log.Succ("The NZB file was pushed to SABnzbd")
 			} else {
 				return fmt.Errorf("received an empty or unknown response")
 			}

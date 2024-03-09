@@ -80,9 +80,9 @@ func logEntry(logType string, logText string, vars ...interface{}) {
 	// log success
 	if logType == "success" {
 		if args.Debug {
-			logger.Printf("INFO: %s\n", stripansi.Strip(strings.Trim(fmt.Sprintf(logText, vars...), "\n")))
+			logger.Printf("SUCCESS: %s\n", stripansi.Strip(strings.Trim(fmt.Sprintf(logText, vars...), "\n")))
 		}
-		fmt.Printf("   %s%s%s\n", color.Green, fmt.Sprintf(logText, vars...), color.Reset)
+		fmt.Printf("   %sSUCCESS:  %s%s\n", color.Green, fmt.Sprintf(logText, vars...), color.Reset)
 	}
 
 }

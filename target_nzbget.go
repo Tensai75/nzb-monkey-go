@@ -6,8 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
-
-	color "github.com/TwiN/go-color"
 )
 
 // target functions for NZBGet
@@ -48,7 +46,8 @@ func nzbget_getCategories() (Categories, error) {
 // function to push the nzb file to the queue
 func nzbget_push(nzb string, category string) error {
 
-	fmt.Printf("\n   Pushing the NZB file to NZBGet...\n")
+	fmt.Println()
+	Log.Info("Pushing the NZB file to NZBGet...")
 
 	// response structure
 	type responseStruct struct {
@@ -97,7 +96,7 @@ func nzbget_push(nzb string, category string) error {
 				return err
 			} else {
 				if jsonResponse.Result > 0 {
-					fmt.Printf("%s   SUCCESS:  The NZB file was pushed to NZBGet %s\n", color.Green, color.Reset)
+					Log.Succ("The NZB file was pushed to NZBGet")
 				} else {
 					return fmt.Errorf("received an empty or unknown response")
 				}
