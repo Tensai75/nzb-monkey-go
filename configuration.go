@@ -3,6 +3,7 @@ package main
 import (
 	"sort"
 	"strconv"
+	"strings"
 
 	"gopkg.in/ini.v1"
 )
@@ -11,6 +12,7 @@ import (
 type Configuration struct {
 	General struct {
 		Target            string `ini:"target"`
+		Targets           []string
 		Categorize        string `ini:"categorize"`
 		Success_wait_time int    `ini:"success_wait_time"`
 		Error_wait_time   int    `ini:"error_wait_time"`
@@ -162,4 +164,17 @@ func loadConfig() {
 		args.Debug = conf.General.Debug
 	}
 
+	// check target parameter
+	for _, target := range strings.Split(conf.General.Target, ",") {
+		target = strings.TrimSpace(target)
+		if _, ok := targets[target]; ok {
+			conf.General.Targets = append(conf.General.Targets, target)
+		} else {
+			Log.Warn("Undefined target '%s'", target)
+		}
+	}
+	if len(conf.General.Targets) == 0 {
+		Log.Error("Configuration error: no valid targets")
+		exit(1)
+	}
 }

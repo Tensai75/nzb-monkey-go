@@ -6,6 +6,7 @@ func defaultConfig() string {
 	return strings.Trim(`
 [GENERAL]
 # Target for handling nzb files - EXECUTE, SABNZBD, NZBGET or SYNOLOGYDLS
+# Multiple targets can be separated by commas, e.g. "EXECUTE,SABNZBD"
 target = "EXECUTE"
 # Let the monkey choose a category. Values are: off, auto, manual
 categorize = "off"

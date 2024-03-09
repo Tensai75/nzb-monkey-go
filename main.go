@@ -191,13 +191,23 @@ func processFoundNzb(nzb *Result) {
 	}
 	var err error
 	var nzbfile string
+	var hasError bool
 	if nzbfile, err = nzbparser.WriteString(nzb.Nzb); err == nil {
-		if err = targets[conf.General.Target].push(nzbfile, category); err == nil {
-			exit(0)
+		for _, target := range conf.General.Targets {
+			if err = targets[target].push(nzbfile, category); err != nil {
+				Log.Error(err.Error())
+				hasError = true
+			}
 		}
+	} else {
+		Log.Error(err.Error())
+		hasError = true
 	}
-	Log.Error(err.Error())
-	exit(1)
+	if hasError {
+		exit(1)
+	} else {
+		exit(0)
+	}
 }
 
 // always use exit function to terminate
