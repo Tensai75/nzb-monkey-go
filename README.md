@@ -37,6 +37,12 @@ Please also note that the macOS binaries are not signed.
 Feel free to send pull requests.
 
 ## Change log
+#### v0.1.12
+- new option to have several targets, seperated by commas
+- new option for category subfolders when using EXECUTE
+- update of cleanup routine for better error handling and taking into account the category subfolders
+- fix for success messages not written to the log file
+
 #### v0.1.11
 - update of binsearch.info urls (new API)
 - removal of binsearch alternative servers (no longer available)
