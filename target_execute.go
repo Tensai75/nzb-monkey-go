@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"time"
@@ -16,17 +17,20 @@ func execute_push(nzb string, category string) error {
 	fmt.Println()
 	Log.Info("Saving the NZB file ...")
 
+	var basepath string
 	var path string
 	var err error
 
 	if filepath.IsAbs(conf.Execute.Nzbsavepath) {
-		path = conf.Execute.Nzbsavepath
+		basepath = conf.Execute.Nzbsavepath
 	} else {
-		path = filepath.Join(homePath, conf.Execute.Nzbsavepath)
+		basepath = filepath.Join(homePath, conf.Execute.Nzbsavepath)
 	}
 
 	if conf.Execute.Category_folder && category != "" {
-		path = filepath.Join(path, category)
+		path = filepath.Join(basepath, category)
+	} else {
+		path = basepath
 	}
 
 	if path, err = filepath.Abs(path); err != nil {
@@ -54,7 +58,7 @@ func execute_push(nzb string, category string) error {
 
 	// clean up files before writing new one
 	if conf.Execute.CleanUpEnable {
-		go execute_cleanup(path)
+		execute_cleanup(basepath)
 	}
 
 	// make full filename
@@ -70,7 +74,7 @@ func execute_push(nzb string, category string) error {
 	if err := os.WriteFile(path, []byte(nzb), os.ModePerm); err != nil {
 		return err
 	} else {
-		Log.Succ("The NZB file was saved to '%s'", path)
+		Log.Succ("The NZB file was saved as '%s'", path)
 	}
 
 	// copy password to clipboard
@@ -96,22 +100,31 @@ func execute_push(nzb string, category string) error {
 }
 
 func execute_cleanup(path string) {
-	files, err := os.ReadDir(path)
-	if err == nil {
-		for _, file := range files {
-			filePath := filepath.Join(path, file.Name())
-			info, err := file.Info()
-			if err == nil {
-				if info.Mode().IsRegular() {
-					if time.Since(info.ModTime()) > time.Hour*time.Duration(conf.Execute.CleanUpMaxAge*24) && filepath.Ext(file.Name()) == ".nzb" {
-						if err := os.Remove(filePath); err != nil {
-							Log.Warn("Error deleting file '%s' during cleanup: %v", filePath, err)
-						}
-					}
+	Log.Info("Cleaning up nzb folder '%s'", path)
+	if files, err := os.ReadDir(path); err == nil {
+		delete_files(files, path, 0)
+	}
+}
+
+func delete_files(files []fs.DirEntry, path string, level int) {
+	for _, file := range files {
+		filePath := filepath.Join(path, file.Name())
+		if info, err := file.Info(); err == nil {
+			// if category folder is active, recursively also delete nzb files in level 1 subfolders
+			if file.IsDir() && conf.Execute.Category_folder && level < 1 {
+				if files, err := os.ReadDir(filePath); err == nil {
+					delete_files(files, filePath, level+1)
 				}
 			} else {
-				Log.Warn("Error reading info for file '%s' during cleanup: %v", filePath, err)
+				if info.Mode().IsRegular() && time.Since(info.ModTime()) > time.Hour*time.Duration(conf.Execute.CleanUpMaxAge*24) && filepath.Ext(file.Name()) == ".nzb" {
+					Log.Info("Deleting file '%s'", filePath)
+					if err := os.Remove(filePath); err != nil {
+						Log.Warn("Error deleting file '%s' during cleanup: %v", filePath, err)
+					}
+				}
 			}
+		} else {
+			Log.Warn("Error reading info for '%s' during cleanup: %v", filePath, err)
 		}
 	}
 }
