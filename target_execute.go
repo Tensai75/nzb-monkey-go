@@ -25,6 +25,10 @@ func execute_push(nzb string, category string) error {
 		path = filepath.Join(homePath, conf.Execute.Nzbsavepath)
 	}
 
+	if conf.Execute.Category_folder && category != "" {
+		path = filepath.Join(path, category)
+	}
+
 	if path, err = filepath.Abs(path); err != nil {
 		return err
 	}

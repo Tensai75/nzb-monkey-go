@@ -24,6 +24,8 @@ passtoclipboard = false
 # Path to save nzb files
 # Either an absolute path or a path relative to the user's home directory
 nzbsavepath = "./Downloads/nzb"
+# Use category subfolders
+category_folder = false
 # Don't execute default programm for .nzb
 dontexecute = true
 # Delete old NZB files from nzbsavepath
