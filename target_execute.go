@@ -95,15 +95,18 @@ func execute_cleanup(path string) {
 	files, err := os.ReadDir(path)
 	if err == nil {
 		for _, file := range files {
+			filePath := filepath.Join(path, file.Name())
 			info, err := file.Info()
-			if err != nil {
-				Log.Error("Cannot load file info: %v", err)
-				continue
-			}
-			if info.Mode().IsRegular() {
-				if time.Since(info.ModTime()) > time.Hour*time.Duration(conf.Execute.CleanUpMaxAge*24) && filepath.Ext(file.Name()) == ".nzb" {
-					os.Remove(filepath.Join(path, file.Name()))
+			if err == nil {
+				if info.Mode().IsRegular() {
+					if time.Since(info.ModTime()) > time.Hour*time.Duration(conf.Execute.CleanUpMaxAge*24) && filepath.Ext(file.Name()) == ".nzb" {
+						if err := os.Remove(filePath); err != nil {
+							Log.Warn("Error deleting file '%s' during cleanup: %v", filePath, err)
+						}
+					}
 				}
+			} else {
+				Log.Warn("Error reading info for file '%s' during cleanup: %v", filePath, err)
 			}
 		}
 	}
