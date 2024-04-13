@@ -24,12 +24,6 @@ jobs:
           - name: Windows-amd64
             os: windows
             arch: amd64
-          - name: Windows-386
-            os: windows
-            arch: 386 # 32bit
-          - name: Linux-arm
-            os: linux
-            arch: arm
           - name: Linux-arm64
             os: linux
             arch: arm64
