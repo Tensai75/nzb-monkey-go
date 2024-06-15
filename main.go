@@ -12,7 +12,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Tensai75/nzb-monkey-go/nzbparser"
+	"github.com/Tensai75/nzbparser"
 	color "github.com/TwiN/go-color"
 	humanize "github.com/dustin/go-humanize"
 )

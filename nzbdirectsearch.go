@@ -16,8 +16,8 @@ import (
 	"time"
 
 	"github.com/Tensai75/nntp"
-	"github.com/Tensai75/nzb-monkey-go/nzbparser"
-	"github.com/Tensai75/nzb-monkey-go/subjectparser"
+	"github.com/Tensai75/nzbparser"
+	"github.com/Tensai75/subjectparser"
 	progressbar "github.com/schollz/progressbar/v3"
 )
 

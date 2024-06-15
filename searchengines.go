@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Tensai75/nzb-monkey-go/nzbparser"
+	"github.com/Tensai75/nzbparser"
 )
 
 // search engine structure
