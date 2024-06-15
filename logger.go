@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	color "github.com/TwiN/go-color"
 	"github.com/acarl005/stripansi"
+	"github.com/fatih/color"
 )
 
 type Logger struct {
@@ -58,7 +58,9 @@ func logEntry(logType string, logText string, vars ...interface{}) {
 		if args.Debug {
 			logger.Printf("ERROR: %s\n", stripansi.Strip(strings.Trim(fmt.Sprintf(logText, vars...), "\n")))
 		}
-		fmt.Printf("   %sERROR:    %s%s\n", color.Red, fmt.Sprintf(logText, vars...), color.Reset)
+		color.Set(color.FgRed)
+		fmt.Printf("   ERROR:    %s\n", fmt.Sprintf(logText, vars...))
+		color.Unset()
 	}
 
 	// log warn
@@ -66,7 +68,9 @@ func logEntry(logType string, logText string, vars ...interface{}) {
 		if args.Debug {
 			logger.Printf("WARNING: %s\n", stripansi.Strip(strings.Trim(fmt.Sprintf(logText, vars...), "\n")))
 		}
-		fmt.Printf("   %sWARNING:  %s%s\n", color.Yellow, fmt.Sprintf(logText, vars...), color.Reset)
+		color.Set(color.FgYellow)
+		fmt.Printf("   WARNING:  %s\n", fmt.Sprintf(logText, vars...))
+		color.Unset()
 	}
 
 	// log info
@@ -74,7 +78,7 @@ func logEntry(logType string, logText string, vars ...interface{}) {
 		if args.Debug {
 			logger.Printf("INFO: %s\n", stripansi.Strip(strings.Trim(fmt.Sprintf(logText, vars...), "\n")))
 		}
-		fmt.Printf("   %s%s%s\n", color.Reset, fmt.Sprintf(logText, vars...), color.Reset)
+		fmt.Printf("   %s\n", fmt.Sprintf(logText, vars...))
 	}
 
 	// log success
@@ -82,7 +86,9 @@ func logEntry(logType string, logText string, vars ...interface{}) {
 		if args.Debug {
 			logger.Printf("SUCCESS: %s\n", stripansi.Strip(strings.Trim(fmt.Sprintf(logText, vars...), "\n")))
 		}
-		fmt.Printf("   %sSUCCESS:  %s%s\n", color.Green, fmt.Sprintf(logText, vars...), color.Reset)
+		color.Set(color.FgGreen)
+		fmt.Printf("   SUCCESS:  %s\n", fmt.Sprintf(logText, vars...))
+		color.Unset()
 	}
 
 }
@@ -93,7 +99,9 @@ func initLogger(file string) {
 		logger = log.New(logFile, "", log.Ldate|log.Ltime)
 		logger.Printf("INFO: %s %s started", appName, appVersion)
 	} else {
-		fmt.Printf("   %sERROR: Fatal error while opening log file '%s': %s%s\n", color.Red, file, err.Error(), color.Reset)
+		color.Set(color.FgRed)
+		fmt.Printf("   ERROR: Fatal error while opening log file '%s': %s\n", file, err.Error())
+		color.Unset()
 		exit(1)
 	}
 }

@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	color "github.com/TwiN/go-color"
+	"github.com/fatih/color"
 )
 
 type Categories []string
@@ -41,10 +41,12 @@ func checkCategories() string {
 		if categories, err := targets[conf.General.Target].getCategories(); err == nil {
 			if len(categories) > 0 {
 				fmt.Printf("   Please select category:\n")
+				color.Set(color.FgCyan)
 				for i, category := range categories {
-					fmt.Printf("%s             %d - %s%s\n", color.Cyan, i+1, category, color.Reset)
+					fmt.Printf("             %d - %s\n", i+1, category)
 				}
-				fmt.Printf("%s             X - no category%s\n", color.Cyan, color.Reset)
+				fmt.Printf("             X - no category\n")
+				color.Unset()
 				input := 0
 				for input == 0 {
 					fmt.Print("   Enter the number of the category: ")

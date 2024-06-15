@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/Tensai75/nzbparser"
-	color "github.com/TwiN/go-color"
 	humanize "github.com/dustin/go-humanize"
+	"github.com/fatih/color"
 )
 
 type Result struct {
@@ -29,12 +29,17 @@ type Result struct {
 
 // global variables
 var (
-	appName    = "NZB Monkey Go"
-	appVersion string
-	appExec    string
-	appPath    string
-	homePath   string
-	results    = make([]Result, 0)
+	appName                   = "NZB Monkey Go"
+	appVersion                string
+	appExec                   string
+	appPath                   string
+	homePath                  string
+	results                   = make([]Result, 0)
+	filesColor, segmentsColor func(a ...interface{}) string
+	red                       = color.New(color.FgRed).SprintFunc()
+	yellow                    = color.New(color.FgYellow).SprintFunc()
+	green                     = color.New(color.FgGreen).SprintFunc()
+	blue                      = color.New(color.FgBlue).SprintFunc()
 )
 
 func init() {
@@ -59,7 +64,9 @@ func init() {
 	}
 
 	fmt.Println()
-	Log.Info("%s%s %s%s", color.Yellow, appName, appVersion, color.Reset)
+	color.Set(color.FgHiYellow)
+	Log.Info("%s %s", appName, appVersion)
+	color.Unset()
 
 	// graceful handling of manual aborts
 	go func() {
@@ -85,29 +92,29 @@ func main() {
 	fmt.Println()
 	Log.Info("Arguments provided:")
 	if args.Nzblnk != "" {
-		Log.Info("NZBLNK:   %s%s%s", color.Blue, args.Nzblnk, color.Reset)
+		Log.Info("NZBLNK:   %s", blue(args.Nzblnk))
 	}
 	if args.Title != "" {
-		Log.Info("Title:    %s%s%s", color.Blue, args.Title, color.Reset)
+		Log.Info("Title:    %s", blue(args.Title))
 	}
 	if args.Header != "" {
-		Log.Info("Header:   %s%s%s", color.Blue, args.Header, color.Reset)
+		Log.Info("Header:   %s", blue(args.Header))
 	}
 	if args.Password != "" {
-		Log.Info("Password: %s%s%s", color.Blue, args.Password, color.Reset)
+		Log.Info("Password: %s", blue(args.Password))
 	}
 	if len(args.Groups) > 0 {
-		Log.Info("Groups:   %s%s%s", color.Blue, strings.Join(args.Groups[:], ", "), color.Reset)
+		Log.Info("Groups:   %s", blue(strings.Join(args.Groups[:], ", ")))
 	}
 	if args.UnixDate > 0 {
 		if args.IsTimestamp {
-			Log.Info("Date:     %s%s%s", color.Blue, time.Unix(args.UnixDate, 0).Format("02.01.2006 15:04:05 MST"), color.Reset)
+			Log.Info("Date:     %s", blue(time.Unix(args.UnixDate, 0).Format("02.01.2006 15:04:05 MST")))
 		} else {
-			Log.Info("Date:     %s%s%s", color.Blue, time.Unix(args.UnixDate, 0).Format("02.01.2006"), color.Reset)
+			Log.Info("Date:     %s", blue(time.Unix(args.UnixDate, 0).Format("02.01.2006")))
 		}
 	}
 	if args.Category != "" {
-		Log.Info("Category: %s%s%s", color.Blue, args.Category, color.Reset)
+		Log.Info("Category: %s", blue(args.Category))
 	}
 
 	for _, name := range conf.Searchengines {
@@ -135,7 +142,6 @@ func main() {
 		Log.Error("No results found for header '%s'", args.Header)
 		exit(1)
 	}
-
 }
 
 func processResult(nzb *nzbparser.Nzb, name string) {
@@ -148,21 +154,19 @@ func processResult(nzb *nzbparser.Nzb, name string) {
 		SegmentsMissingPercent: float64(float64(nzb.TotalSegments-nzb.Segments) / float64(nzb.TotalSegments) * 100),
 		SegmentsComplete:       float64(float64(nzb.TotalSegments-nzb.Segments)/float64(nzb.TotalSegments)*100) <= conf.Nzbcheck.MaxMissingSegmentsPercent,
 	}
-	var filesColor string
 	if result.FilesComplete {
-		filesColor = color.Green
+		filesColor = green
 	} else {
-		filesColor = color.Red
+		filesColor = red
 	}
-	var segmentsColor string
 	if result.SegmentsComplete {
-		segmentsColor = color.Green
+		segmentsColor = green
 	} else {
-		segmentsColor = color.Red
+		segmentsColor = red
 	}
-	Log.Info("Found:    %s%s (%s)%s", color.Green, result.Nzb.Files[0].Subject, humanize.Bytes(uint64(result.Nzb.Bytes)), color.Reset)
-	Log.Info("Files:    %s%d/%d (Missing files: %d)%s", filesColor, result.Nzb.Files.Len(), result.Nzb.TotalFiles, result.FilesMissing, color.Reset)
-	Log.Info("Segments: %s%d/%d (Missing segments: %f %%)%s", segmentsColor, result.Nzb.Segments, result.Nzb.TotalSegments, result.SegmentsMissingPercent, color.Reset)
+	Log.Info("Found:    %s", green(fmt.Sprintf("%s (%s)", result.Nzb.Files[0].Subject, humanize.Bytes(uint64(result.Nzb.Bytes)))))
+	Log.Info("Files:    %s", filesColor(fmt.Sprintf("%d/%d (Missing files: %d)", result.Nzb.Files.Len(), result.Nzb.TotalFiles, result.FilesMissing)))
+	Log.Info("Segments: %s", segmentsColor(fmt.Sprintf("%d/%d (Missing segments: %f %%)", result.Nzb.Segments, result.Nzb.TotalSegments, result.SegmentsMissingPercent)))
 
 	if !conf.Nzbcheck.SkipFailed || (result.FilesComplete && result.SegmentsComplete) {
 		if !conf.Nzbcheck.BestNZB || (result.FilesMissing == 0 && result.SegmentsMissing == 0) {
