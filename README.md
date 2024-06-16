@@ -37,6 +37,12 @@ Please also note that the macOS binaries are not signed.
 Feel free to send pull requests.
 
 ## Change log
+#### v0.1.13
+- fix for directsearch not working on some usenet servers which actually return the correct error response for unknown commands
+- better color output support for windows
+- update of all dependencies
+- 32bit builds removed from build script
+
 #### v0.1.12
 - new option to have several targets, seperated by commas
 - new option for category subfolders when using EXECUTE
