@@ -15,7 +15,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Tensai75/nntp"
 	"github.com/Tensai75/nzbparser"
 	"github.com/Tensai75/subjectparser"
 	progressbar "github.com/schollz/progressbar/v3"
@@ -107,20 +106,16 @@ func searchInGroup(group string) error {
 	if !args.IsTimestamp {
 		endDate += 60 * 60 * 24
 	}
-	var currentMessageID int
+	var currentMessageID, lastMessageID int
 	var messageDate time.Time
-	conn, firstMessageID, lastMessageID, err := switchToGroup(group)
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
+	var err error
 	Log.Info("Scanning from %s to %s", time.Unix(startDate, 0).Format("02.01.2006 15:04:05 MST"), time.Unix(endDate, 0).Format("02.01.2006 15:04:05 MST"))
-	currentMessageID, messageDate, err = scanForDate(conn, firstMessageID, lastMessageID, startDate, endDate, true, "   Scanning for first message number ...")
+	currentMessageID, messageDate, err = getFirstMessageNumberFromGroup(group, startDate)
 	if err != nil {
 		return fmt.Errorf("Error while scanning group '%s' for the first message: %v\n", group, err)
 	}
 	Log.Info("Found first message number: %v / Date: %v", currentMessageID, messageDate.Local().Format("02.01.2006 15:04:05 MST"))
-	lastMessageID, messageDate, err = scanForDate(conn, firstMessageID, lastMessageID, endDate, endDate, false, "   Scanning for last message number ... ")
+	lastMessageID, messageDate, err = getLastMessageNumberFromGroup(group, endDate)
 	if err != nil {
 		return fmt.Errorf("Error while scanning group '%s' for the last message: %v\n", group, err)
 	}
@@ -128,7 +123,6 @@ func searchInGroup(group string) error {
 		return errors.New("no messages found within search range")
 	}
 	Log.Info("Found last message number: %v / Date: %v", lastMessageID, messageDate.Local().Format("02.01.2006 15:04:05 MST"))
-	conn.Close()
 	Log.Info("Scanning messages %v to %v", currentMessageID, lastMessageID)
 	directsearchCounter = 0
 	bar := progressbar.NewOptions(lastMessageID-currentMessageID,
@@ -272,88 +266,6 @@ func searchMessages(ctx context.Context, firstMessage int, lastMessage int, grou
 	return nil
 }
 
-func scanForDate(conn *safeConn, firstMessageID int, lastMessageID int, startDate int64, endDate int64, first bool, text string) (int, time.Time, error) {
-	bar := progressbar.NewOptions((lastMessageID - firstMessageID),
-		progressbar.OptionSetDescription(text),
-		progressbar.OptionSetRenderBlankState(true),
-		progressbar.OptionThrottle(time.Millisecond*100),
-		progressbar.OptionShowElapsedTimeOnFinish(),
-	)
-	defer func() {
-		bar.Finish()
-		fmt.Println()
-	}()
-	var currentDate int64
-	currentMessageID := firstMessageID
-	endMessageID := lastMessageID
-	scanStep := endMessageID - currentMessageID
-	overviewStep := 10
-	for currentMessageID <= endMessageID {
-		if scanStep < 1000 {
-			results, err := conn.Overview(currentMessageID-scanStep-1, currentMessageID+scanStep+1)
-			if err != nil {
-				return 0, time.Time{}, err
-			}
-			for i, overview := range results {
-				bar.Add(1)
-				if overview.Date.Unix() > startDate {
-					if first || i == 0 {
-						return overview.MessageNumber, overview.Date, nil
-					} else {
-						return results[i-1].MessageNumber, results[i-1].Date, nil
-					}
-				}
-			}
-			if first && results[len(results)-1].MessageNumber >= lastMessageID && results[len(results)-1].Date.Unix() < startDate {
-				return 0, time.Time{}, fmt.Errorf("start date of search range is newer than latest message of this group")
-			} else {
-				return results[len(results)-1].MessageNumber, results[len(results)-1].Date, nil
-			}
-		} else {
-			var results []nntp.MessageOverview
-			var stepMultiplier = 1
-			var step int
-			var lastStep bool
-			for results == nil && !lastStep {
-				var err error
-				step = overviewStep * stepMultiplier
-				if currentMessageID+step > lastMessageID {
-					step = lastMessageID - currentMessageID
-					lastStep = true
-				}
-				results, err = getOverview(conn, currentMessageID, step)
-				if err != nil {
-					if err.Error() == "420 No Articles Selected" {
-						stepMultiplier *= 10
-					} else {
-						return 0, time.Time{}, err
-					}
-				}
-			}
-			if len(results) == 0 {
-				return currentMessageID, time.Unix(currentDate, 0), nil
-			}
-			overview := results[0]
-			currentDate = overview.Date.Unix()
-			scanStep = (scanStep / 2) + 1
-			if first && currentMessageID == firstMessageID && currentDate > endDate {
-				return 0, time.Time{}, fmt.Errorf("end date of search range is older than oldest message of this group")
-			} else if first && currentMessageID == firstMessageID && currentDate > startDate {
-				return overview.MessageNumber, overview.Date, nil
-			}
-			if currentDate < startDate {
-				currentMessageID = currentMessageID + scanStep
-			}
-			if currentDate > startDate {
-				currentMessageID = currentMessageID - scanStep
-			}
-		}
-		bar.Add(scanStep)
-
-	}
-	return 0, time.Time{}, fmt.Errorf("no messages found within search range")
-}
-
 func switchToGroup(group string) (*safeConn, int, int, error) {
 	conn, err := ConnectNNTP()
 	if err != nil {
@@ -366,12 +278,149 @@ func switchToGroup(group string) (*safeConn, int, int, error) {
 	return conn, firstMessageID, lastMessageID, nil
 }
 
-func getOverview(conn *safeConn, currentMessageID int, step int) ([]nntp.MessageOverview, error) {
-	return conn.Overview(currentMessageID, currentMessageID+step)
-}
-
 func GetMD5Hash(text string) string {
 	hasher := md5.New()
 	hasher.Write([]byte(text))
 	return hex.EncodeToString(hasher.Sum(nil))
+}
+
+func getFirstMessageNumberFromGroup(group string, startDate int64) (int, time.Time, error) {
+
+	var firstMessageNumber, lastMessageNumber, overviewStart, overviewEnd int
+	var lastStep bool
+
+	conn, err := ConnectNNTP()
+	if err != nil {
+		return 0, time.Time{}, err
+	}
+	_, firstMessageNumber, lastMessageNumber, err = conn.Group(group)
+	if err != nil {
+		return 0, time.Time{}, err
+	}
+	low := firstMessageNumber
+	high := lastMessageNumber
+	step := 1000
+	bar := progressbar.NewOptions(calcSteps(firstMessageNumber, lastMessageNumber, step),
+		progressbar.OptionSetDescription("   Scanning for first message number ..."),
+		progressbar.OptionSetRenderBlankState(true),
+		progressbar.OptionThrottle(time.Millisecond*100),
+		progressbar.OptionShowElapsedTimeOnFinish(),
+	)
+	defer func() {
+		bar.Finish()
+		fmt.Println()
+	}()
+
+	for low <= high {
+		difference := high - low
+		if difference < step {
+			overviewStart = low
+			overviewEnd = high
+			lastStep = true
+		} else {
+			overviewStart = low + (difference / 2)
+			overviewEnd = overviewStart + step
+		}
+		results, err := conn.Overview(overviewStart, overviewEnd)
+		if err != nil {
+			return 0, time.Time{}, err
+		}
+		bar.Add(1)
+		for i, result := range results {
+			if i == 0 && result.Date.Unix() > startDate {
+				high = result.MessageNumber
+				break
+			}
+			if result.Date.Unix() >= startDate {
+				return result.MessageNumber, result.Date, nil
+			}
+			if i == len(results)-1 {
+				low = result.MessageNumber
+			}
+		}
+		if lastStep {
+			if low == firstMessageNumber {
+				return results[0].MessageNumber, results[0].Date, nil
+			} else {
+				return 0, time.Time{}, fmt.Errorf("start date of search range is newer than latest message of this group")
+			}
+		}
+	}
+	return 0, time.Time{}, fmt.Errorf("unknown error which should not happen...??")
+}
+
+func getLastMessageNumberFromGroup(group string, endDate int64) (int, time.Time, error) {
+
+	var firstMessageNumber, lastMessageNumber, overviewStart, overviewEnd int
+	var lastStep bool
+
+	conn, err := ConnectNNTP()
+	if err != nil {
+		return 0, time.Time{}, err
+	}
+	_, firstMessageNumber, lastMessageNumber, err = conn.Group(group)
+	if err != nil {
+		return 0, time.Time{}, err
+	}
+	low := firstMessageNumber
+	high := lastMessageNumber
+	step := 1000
+	bar := progressbar.NewOptions(calcSteps(firstMessageNumber, lastMessageNumber, step),
+		progressbar.OptionSetDescription("   Scanning for last message number ... "),
+		progressbar.OptionSetRenderBlankState(true),
+		progressbar.OptionThrottle(time.Millisecond*100),
+		progressbar.OptionShowElapsedTimeOnFinish(),
+	)
+	defer func() {
+		bar.Finish()
+		fmt.Println()
+	}()
+
+	for low <= high {
+		difference := high - low
+		if difference < step {
+			overviewStart = low
+			overviewEnd = high
+			lastStep = true
+		} else {
+			overviewStart = low + (difference / 2)
+			overviewEnd = overviewStart + step
+		}
+		results, err := conn.Overview(overviewStart, overviewEnd)
+		if err != nil {
+			return 0, time.Time{}, err
+		}
+		bar.Add(1)
+		for i, result := range results {
+			if i == 0 && result.Date.Unix() > endDate {
+				high = result.MessageNumber
+				break
+			}
+			if result.Date.Unix() >= endDate {
+				return result.MessageNumber, result.Date, nil
+			}
+			if i == len(results)-1 {
+				low = result.MessageNumber
+			}
+		}
+		if lastStep {
+			if high == lastMessageNumber {
+				return results[len(results)-1].MessageNumber, results[len(results)-1].Date, nil
+			} else {
+				return 0, time.Time{}, fmt.Errorf("end date of search range is older than oldest message of this group")
+			}
+		}
+	}
+	return 0, time.Time{}, fmt.Errorf("unknown error which should not happen...??")
+}
+
+func calcSteps(low int, high int, step int) (steps int) {
+	mid := (high - low) / 2
+	for i := 1; i > 0; i++ {
+		if mid < step {
+			return i
+		}
+		mid = (mid - low) / 2
+	}
+	return 0
 }
