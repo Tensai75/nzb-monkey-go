@@ -5,9 +5,9 @@ go 1.19
 require (
 	github.com/Tensai75/nntp v0.1.2
 	github.com/Tensai75/nzbparser v0.1.0
-	github.com/Tensai75/subjectparser v0.1.0
+	github.com/Tensai75/subjectparser v0.1.1
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
-	github.com/alexflint/go-arg v1.5.0
+	github.com/alexflint/go-arg v1.5.1
 	github.com/atotto/clipboard v0.1.4
 	github.com/dustin/go-humanize v1.0.1
 	github.com/fatih/color v1.17.0
