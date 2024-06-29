@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"html"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -217,8 +216,7 @@ func searchMessages(ctx context.Context, firstMessage int, lastMessage int, grou
 			return nil
 		}
 		subject := html.UnescapeString(strings.ToValidUTF8(overview.Subject, ""))
-		searchPattern := regexp.MustCompile("(?i)" + regexp.QuoteMeta(args.Header))
-		if match := searchPattern.Match([]byte(subject)); match {
+		if strings.Contains(strings.ToLower(subject), strings.ToLower(args.Header)) {
 			if subject, err := subjectparser.Parse(subject); err == nil {
 				var date int64
 				if date = overview.Date.Unix(); date < 0 {
