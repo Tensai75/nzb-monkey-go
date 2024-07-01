@@ -14,6 +14,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/Tensai75/nntpPool"
 	"github.com/Tensai75/nzbparser"
 	"github.com/Tensai75/subjectparser"
 	progressbar "github.com/schollz/progressbar/v3"
@@ -55,6 +56,12 @@ func nzbdirectsearch(engine SearchEngine, name string) error {
 	}
 
 	var searchInGroupError error
+
+	if err := initNntpPool(); err != nil {
+		return err
+	} else {
+		defer pool.Close()
+	}
 
 	for i, group := range args.Groups {
 		if i > 0 && conf.Directsearch.FirstGroupOnly && searchInGroupError == nil {
@@ -109,12 +116,12 @@ func searchInGroup(group string) error {
 	var messageDate time.Time
 	var err error
 	Log.Info("Scanning from %s to %s", time.Unix(startDate, 0).Format("02.01.2006 15:04:05 MST"), time.Unix(endDate, 0).Format("02.01.2006 15:04:05 MST"))
-	currentMessageID, messageDate, err = getFirstMessageNumberFromGroup(group, startDate)
+	currentMessageID, messageDate, err = getFirstMessageNumberFromGroup(group, startDate, searchesCtx)
 	if err != nil {
 		return fmt.Errorf("Error while scanning group '%s' for the first message: %v\n", group, err)
 	}
 	Log.Info("Found first message number: %v / Date: %v", currentMessageID, messageDate.Local().Format("02.01.2006 15:04:05 MST"))
-	lastMessageID, messageDate, err = getLastMessageNumberFromGroup(group, endDate)
+	lastMessageID, messageDate, err = getLastMessageNumberFromGroup(group, endDate, searchesCtx)
 	if err != nil {
 		return fmt.Errorf("Error while scanning group '%s' for the last message: %v\n", group, err)
 	}
@@ -184,11 +191,11 @@ func searchMessages(ctx context.Context, firstMessage int, lastMessage int, grou
 		return nil // Error somewhere, terminate
 	default: // required, otherwise it will block
 	}
-	conn, firstMessageID, lastMessageID, err := switchToGroup(group)
+	conn, firstMessageID, lastMessageID, err := switchToGroup(group, ctx)
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
+	defer pool.Put(conn)
 	if firstMessage < firstMessageID {
 		firstMessage = firstMessageID
 	}
@@ -201,7 +208,6 @@ func searchMessages(ctx context.Context, firstMessage int, lastMessage int, grou
 	default: // required, otherwise it will block
 	}
 	results, err := conn.Overview(firstMessage, lastMessage)
-	conn.Close()
 	if err != nil {
 		return fmt.Errorf("Error retrieving message overview from the usenet server while searching in group '%s': %v\n", group, err)
 	}
@@ -264,8 +270,8 @@ func searchMessages(ctx context.Context, firstMessage int, lastMessage int, grou
 	return nil
 }
 
-func switchToGroup(group string) (*safeConn, int, int, error) {
-	conn, err := ConnectNNTP()
+func switchToGroup(group string, ctx context.Context) (*nntpPool.NNTPConn, int, int, error) {
+	conn, err := pool.Get(ctx)
 	if err != nil {
 		return nil, 0, 0, fmt.Errorf("Error connecting to the usenet server: %v", err)
 	}
@@ -282,12 +288,13 @@ func GetMD5Hash(text string) string {
 	return hex.EncodeToString(hasher.Sum(nil))
 }
 
-func getFirstMessageNumberFromGroup(group string, startDate int64) (int, time.Time, error) {
+func getFirstMessageNumberFromGroup(group string, startDate int64, ctx context.Context) (int, time.Time, error) {
 
 	var firstMessageNumber, lastMessageNumber, overviewStart, overviewEnd int
 	var lastStep bool
 
-	conn, err := ConnectNNTP()
+	conn, err := pool.Get(ctx)
+	defer pool.Put(conn)
 	if err != nil {
 		return 0, time.Time{}, err
 	}
@@ -347,12 +354,13 @@ func getFirstMessageNumberFromGroup(group string, startDate int64) (int, time.Ti
 	return 0, time.Time{}, fmt.Errorf("unknown error which should not happen...??")
 }
 
-func getLastMessageNumberFromGroup(group string, endDate int64) (int, time.Time, error) {
+func getLastMessageNumberFromGroup(group string, endDate int64, ctx context.Context) (int, time.Time, error) {
 
 	var firstMessageNumber, lastMessageNumber, overviewStart, overviewEnd int
 	var lastStep bool
 
-	conn, err := ConnectNNTP()
+	conn, err := pool.Get(ctx)
+	defer pool.Put(conn)
 	if err != nil {
 		return 0, time.Time{}, err
 	}

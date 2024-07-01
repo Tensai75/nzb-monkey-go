@@ -1,59 +1,45 @@
 package main
 
 import (
-	"fmt"
-	"strconv"
-	"sync"
+	"time"
 
-	"github.com/Tensai75/nntp"
+	"github.com/Tensai75/nntpPool"
 )
-
-type safeConn struct {
-	closed bool
-	*nntp.Conn
-}
 
 var (
-	initConnGuard   sync.Once
-	connectionGuard chan struct{}
+	pool nntpPool.ConnectionPool
 )
 
-func ConnectNNTP() (*safeConn, error) {
-	initConnGuard.Do(func() {
-		connectionGuard = make(chan struct{}, conf.Directsearch.Connections)
-	})
-	connectionGuard <- struct{}{} // will block if guard channel is already filled
-	var conn *nntp.Conn
+func initNntpPool() error {
 	var err error
-	if conf.Directsearch.SSL {
-		conn, err = nntp.DialTLS("tcp", conf.Directsearch.Host+":"+strconv.Itoa(conf.Directsearch.Port), nil)
-	} else {
-		conn, err = nntp.Dial("tcp", conf.Directsearch.Host+":"+strconv.Itoa(conf.Directsearch.Port))
-	}
-	safeConn := safeConn{
-		Conn: conn,
-	}
-	if err != nil {
-		safeConn.Close()
-		return nil, fmt.Errorf("Connection to usenet server failed: %v\r\n", err)
-	}
-	if err = safeConn.Authenticate(conf.Directsearch.Username, conf.Directsearch.Password); err != nil {
-		safeConn.Close()
-		return nil, fmt.Errorf("Authentication with usenet server failed: %v\r\n", err)
-	}
-	return &safeConn, nil
-}
 
-func (c *safeConn) Close() {
-	mutex.Lock()
-	defer mutex.Unlock()
-	if !c.closed {
-		if c.Conn != nil {
-			c.Quit()
+	go func() {
+		for {
+			select {
+			case v := <-nntpPool.LogChan:
+				Log.Info("NNTPPool%v\n", v)
+			case w := <-nntpPool.WarnChan:
+				Log.Warn("NNTPPool%v\n", w.Error())
+			}
 		}
-		if len(connectionGuard) > 0 {
-			<-connectionGuard
-		}
-		c.closed = true
+	}()
+
+	pool, err = nntpPool.New(&nntpPool.Config{
+		Name:                  "",
+		Host:                  conf.Directsearch.Host,
+		Port:                  uint32(conf.Directsearch.Port),
+		SSL:                   conf.Directsearch.SSL,
+		SkipSSLCheck:          true,
+		User:                  conf.Directsearch.Username,
+		Pass:                  conf.Directsearch.Password,
+		ConnWaitTime:          time.Duration(10) * time.Second,
+		MaxConns:              uint32(conf.Directsearch.Connections),
+		IdleTimeout:           30 * time.Second,
+		MaxConnErrors:         3,
+		MaxTooManyConnsErrors: 3,
+	}, 0)
+	if err != nil {
+		return err
 	}
+	return nil
 }
