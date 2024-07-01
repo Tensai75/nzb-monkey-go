@@ -8,84 +8,100 @@ import (
 	"gopkg.in/ini.v1"
 )
 
+type General struct {
+	Target            string `ini:"target"`
+	Targets           []string
+	Categorize        string `ini:"categorize"`
+	Success_wait_time int    `ini:"success_wait_time"`
+	Error_wait_time   int    `ini:"error_wait_time"`
+	Debug             bool   `ini:"debug"`
+}
+
+type Execute struct {
+	Passtofile      bool   `ini:"passtofile"`
+	Passtoclipboard bool   `ini:"passtoclipboard"`
+	Nzbsavepath     string `ini:"nzbsavepath"`
+	Category_folder bool   `ini:"category_folder"`
+	Dontexecute     bool   `ini:"dontexecute"`
+	CleanUpEnable   bool   `ini:"clean_up_enable"`
+	CleanUpMaxAge   int    `ini:"clean_up_max_age"`
+}
+
+type SABnzbd struct {
+	Host              string `ini:"host"`
+	Port              int    `ini:"port"`
+	Ssl               bool   `ini:"ssl"`
+	SkipCheck         bool   `ini:"skip_check"`
+	Nzbkey            string `ini:"nzbkey"`
+	BasicauthUsername string `ini:"basicauth_username"`
+	BasicauthPassword string `ini:"basicauth_password"`
+	Basepath          string `ini:"basepath"`
+	Category          string `ini:"category"`
+	Addpaused         bool   `ini:"addpaused"`
+}
+
+type NZBGet struct {
+	Host              string `ini:"host"`
+	Port              int    `ini:"port"`
+	Ssl               bool   `ini:"ssl"`
+	SkipCheck         bool   `ini:"skip_check"`
+	BasicauthUsername string `ini:"user"`
+	BasicauthPassword string `ini:"pass"`
+	Basepath          string `ini:"basepath"`
+	Category          string `ini:"category"`
+	Addpaused         bool   `ini:"addpaused"`
+}
+
+type SynologyDS struct {
+	Host              string `ini:"host"`
+	Port              int    `ini:"port"`
+	Ssl               bool   `ini:"ssl"`
+	SkipCheck         bool   `ini:"skip_check"`
+	Username          string `ini:"user"`
+	Password          string `ini:"pass"`
+	BasicauthUsername string
+	BasicauthPassword string
+	Basepath          string `ini:"basepath"`
+}
+
+type NZBcheck struct {
+	SkipFailed                bool    `ini:"skip_failed"`
+	MaxMissingSegmentsPercent float64 `ini:"max_missing_segments_percent"`
+	MaxMissingFiles           int     `ini:"max_missing_files"`
+	BestNZB                   bool    `ini:"best_nzb"`
+}
+
+type CategorySettings struct {
+	name  string
+	regex string
+}
+
+type DirectSearch struct {
+	Host           string `ini:"host"`
+	Port           int    `ini:"port"`
+	SSL            bool   `ini:"ssl"`
+	Username       string `ini:"username"`
+	Password       string `ini:"password"`
+	Connections    int    `ini:"connections"`
+	Hours          int    `ini:"hours"`
+	ForwardHours   int    `ini:"forward_hours"`
+	Step           int    `ini:"step"`
+	Scans          int    `ini:"scans"`
+	Skip           bool   `ini:"skip"`
+	FirstGroupOnly bool   `ini:"first_group_only"`
+}
+
 // configuration structure
 type Configuration struct {
-	General struct {
-		Target            string `ini:"target"`
-		Targets           []string
-		Categorize        string `ini:"categorize"`
-		Success_wait_time int    `ini:"success_wait_time"`
-		Error_wait_time   int    `ini:"error_wait_time"`
-		Debug             bool   `ini:"debug"`
-	} `ini:"GENERAL"`
-	Execute struct {
-		Passtofile      bool   `ini:"passtofile"`
-		Passtoclipboard bool   `ini:"passtoclipboard"`
-		Nzbsavepath     string `ini:"nzbsavepath"`
-		Category_folder bool   `ini:"category_folder"`
-		Dontexecute     bool   `ini:"dontexecute"`
-		CleanUpEnable   bool   `ini:"clean_up_enable"`
-		CleanUpMaxAge   int    `ini:"clean_up_max_age"`
-	} `ini:"EXECUTE"`
-	Sabnzbd struct {
-		Host              string `ini:"host"`
-		Port              int    `ini:"port"`
-		Ssl               bool   `ini:"ssl"`
-		SkipCheck         bool   `ini:"skip_check"`
-		Nzbkey            string `ini:"nzbkey"`
-		BasicauthUsername string `ini:"basicauth_username"`
-		BasicauthPassword string `ini:"basicauth_password"`
-		Basepath          string `ini:"basepath"`
-		Category          string `ini:"category"`
-		Addpaused         bool   `ini:"addpaused"`
-	} `ini:"SABNZBD"`
-	Nzbget struct {
-		Host              string `ini:"host"`
-		Port              int    `ini:"port"`
-		Ssl               bool   `ini:"ssl"`
-		SkipCheck         bool   `ini:"skip_check"`
-		BasicauthUsername string `ini:"user"`
-		BasicauthPassword string `ini:"pass"`
-		Basepath          string `ini:"basepath"`
-		Category          string `ini:"category"`
-		Addpaused         bool   `ini:"addpaused"`
-	} `ini:"NZBGET"`
-	Synologyds struct {
-		Host              string `ini:"host"`
-		Port              int    `ini:"port"`
-		Ssl               bool   `ini:"ssl"`
-		SkipCheck         bool   `ini:"skip_check"`
-		Username          string `ini:"user"`
-		Password          string `ini:"pass"`
-		BasicauthUsername string
-		BasicauthPassword string
-		Basepath          string `ini:"basepath"`
-	} `ini:"SYNOLOGYDLS"`
-	Nzbcheck struct {
-		SkipFailed                bool    `ini:"skip_failed"`
-		MaxMissingSegmentsPercent float64 `ini:"max_missing_segments_percent"`
-		MaxMissingFiles           int     `ini:"max_missing_files"`
-		BestNZB                   bool    `ini:"best_nzb"`
-	} `ini:"NZBCheck"`
-	Categories []struct {
-		name  string
-		regex string
-	} `ini:"-"` // will hold the categories regex patterns
-	Searchengines []string `ini:"-"` // will hold the search engines
-	Directsearch  struct {
-		Host           string `ini:"host"`
-		Port           int    `ini:"port"`
-		SSL            bool   `ini:"ssl"`
-		Username       string `ini:"username"`
-		Password       string `ini:"password"`
-		Connections    int    `ini:"connections"`
-		Hours          int    `ini:"hours"`
-		ForwardHours   int    `ini:"forward_hours"`
-		Step           int    `ini:"step"`
-		Scans          int    `ini:"scans"`
-		Skip           bool   `ini:"skip"`
-		FirstGroupOnly bool   `ini:"first_group_only"`
-	} `ini:"DIRECTSEARCH"`
+	General       General            `ini:"GENERAL"`
+	Execute       Execute            `ini:"EXECUTE"`
+	Sabnzbd       SABnzbd            `ini:"SABNZBD"`
+	Nzbget        NZBGet             `ini:"NZBGET"`
+	Synologyds    SynologyDS         `ini:"SYNOLOGYDLS"`
+	Nzbcheck      NZBcheck           `ini:"NZBCheck"`
+	Categories    []CategorySettings `ini:"-"` // will hold the categories regex patterns
+	Searchengines []string           `ini:"-"` // will hold the search engines
+	Directsearch  DirectSearch       `ini:"DIRECTSEARCH"`
 }
 
 // global configuration variable
@@ -95,7 +111,16 @@ var (
 
 func loadConfig() {
 
-	conf = Configuration{}
+	conf = Configuration{
+		Directsearch: DirectSearch{
+			Connections:  20,
+			Hours:        12,
+			ForwardHours: 12,
+			Step:         20000,
+			Scans:        50,
+			Skip:         true,
+		},
+	}
 
 	iniOption := ini.LoadOptions{
 		IgnoreInlineComment: true,
