@@ -39,7 +39,7 @@ var (
 	red                       = color.New(color.FgRed).SprintFunc()
 	yellow                    = color.New(color.FgYellow).SprintFunc()
 	green                     = color.New(color.FgGreen).SprintFunc()
-	blue                      = color.New(color.FgBlue).SprintFunc()
+	blue                      = color.New(color.FgCyan).SprintFunc()
 )
 
 func init() {
