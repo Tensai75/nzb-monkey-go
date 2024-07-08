@@ -37,6 +37,15 @@ Please also note that the macOS binaries are not signed.
 Feel free to send pull requests.
 
 ## Change log
+#### v0.1.14
+- clean search string for NZBKing & url encode search string (should fix some issues with NZBKing)
+- use cyan instead of blue
+- use nntpPool instead of nntp
+- use strings.Contains instead of regexp for directsearch
+- update subjectparser to v0.1.1
+- fix: actually set defaults as given in config comments (thanks @wilriker)
+- complete rewrite of the start and end message search functions
+
 #### v0.1.13
 - fix for directsearch not working on some usenet servers which actually return the correct error response for unknown commands
 - better color output support for windows
