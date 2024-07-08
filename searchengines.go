@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -21,6 +22,12 @@ type SearchEngine struct {
 	jsonPath    string
 	groupNo     int
 	search      func(engine SearchEngine, name string) error
+	stringRegx  []RegexPattern
+}
+
+type RegexPattern struct {
+	pattern     string
+	replacement string
 }
 
 // search engines map
@@ -42,6 +49,12 @@ var searchEngines = SearchEngines{
 		regexString: `href="\/nzb:(.+?)\/"`,
 		groupNo:     1,
 		search:      htmlSearch,
+		stringRegx: []RegexPattern{
+			{
+				pattern:     `((\.| |_)-(\.| |_)|\.|_)+`,
+				replacement: " ",
+			},
+		},
 	},
 	"binsearch": SearchEngine{
 		name:        "Binsearch",
@@ -57,13 +70,26 @@ var searchEngines = SearchEngines{
 	},
 }
 
+func (s *SearchEngine) cleanSearchString(searchString string) string {
+	result := searchString
+	for _, regexPattern := range s.stringRegx {
+		r, err := regexp.Compile(regexPattern.pattern)
+		if err != nil {
+			continue
+		}
+		result = r.ReplaceAllString(result, regexPattern.replacement)
+	}
+	return result
+}
+
 // default search function for html response
 func htmlSearch(engine SearchEngine, name string) error {
 	var err error
 	var body string
 	var searchRegexp *regexp.Regexp
 	var match []string
-	if body, err = loadURL(fmt.Sprintf(engine.searchURL, args.Header)); err == nil {
+	searchString := engine.cleanSearchString(args.Header)
+	if body, err = loadURL(fmt.Sprintf(engine.searchURL, url.QueryEscape(searchString))); err == nil {
 		if searchRegexp, err = regexp.Compile(engine.regexString); err == nil {
 			if match = searchRegexp.FindStringSubmatch(body); match != nil {
 				if len(match) >= engine.groupNo+1 {
@@ -93,7 +119,8 @@ func jsonSearch(engine SearchEngine, name string) error {
 	var body string
 	var result interface{}
 	var value string
-	if body, err = loadURL(fmt.Sprintf(engine.searchURL, args.Header)); err == nil {
+	searchString := engine.cleanSearchString(args.Header)
+	if body, err = loadURL(fmt.Sprintf(engine.searchURL, url.QueryEscape(searchString))); err == nil {
 		if err = json.Unmarshal([]byte(body), &result); err == nil {
 			for _, value := range strings.Split(engine.jsonPath, ".") {
 				if number, err := strconv.Atoi(value); err == nil {
