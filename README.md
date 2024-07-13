@@ -37,6 +37,9 @@ Please also note that the macOS binaries are not signed.
 Feel free to send pull requests.
 
 ## Change log
+#### v0.1.15
+- adding new serach engine nzbindex_beta
+
 #### v0.1.14
 - clean search string for NZBKing & url encode search string (should fix some issues with NZBKing)
 - use cyan instead of blue

@@ -42,6 +42,13 @@ var searchEngines = SearchEngines{
 		jsonPath:    "results.0.id",
 		search:      jsonSearch,
 	},
+	"nzbindex_beta": SearchEngine{
+		name:        "NZBIndex Beta",
+		searchURL:   "https://beta.nzbindex.com/api/search?q=%s",
+		downloadURL: "https://beta.nzbindex.com/api/download/%s.nzb",
+		jsonPath:    "data.content.0.id",
+		search:      jsonSearch,
+	},
 	"nzbking": SearchEngine{
 		name:        "NZBKing",
 		searchURL:   "https://nzbking.com/?q=%s",
