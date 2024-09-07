@@ -55,6 +55,8 @@ basepath = ""
 category = ""
 # Add the nzb paused to the queue
 addpaused = false
+# Add compression on upload, either "none" or "zip"
+compression = "none"
 
 [NZBGET]
 # NZBGet Host

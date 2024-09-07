@@ -38,6 +38,7 @@ type SABnzbd struct {
 	Basepath          string `ini:"basepath"`
 	Category          string `ini:"category"`
 	Addpaused         bool   `ini:"addpaused"`
+	Compression       string `ini:"compression"`
 }
 
 type NZBGet struct {

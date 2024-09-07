@@ -1,13 +1,9 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
-	"mime/multipart"
 	"net/url"
-	"strings"
 )
 
 // target functions for SABnzbd
@@ -49,20 +45,25 @@ func sabnzbd_push(nzb string, category string) error {
 	fmt.Println()
 	Log.Info("Pushing the NZB file to SABnzbd...")
 
+	// supported compression types
+	compressionTypes := []string{
+		"zip",
+	}
+
 	// response structure
 	type responseStruct struct {
 		Status  bool     `json:"status"`
 		Nzo_ids []string `json:"nzo_ids"`
 	}
 
-	// if category is empty set to default category
-	if category == "" && conf.Sabnzbd.Category != "" {
-		category = conf.Sabnzbd.Category
-	}
-
 	// if category is provided as argument use category from arguments
 	if args.Category != "" {
 		category = args.Category
+	}
+
+	// if category is empty set to default category
+	if category == "" && conf.Sabnzbd.Category != "" {
+		category = conf.Sabnzbd.Category
 	}
 
 	// set addPaused option
@@ -84,13 +85,12 @@ func sabnzbd_push(nzb string, category string) error {
 	query.Add("priority", addPaused)
 
 	// prepare body data
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-	part, _ := writer.CreateFormFile("nzbfile", args.Title+".nzb")
-	io.Copy(part, strings.NewReader(nzb))
-	writer.Close()
+	body, contentType, err := createMultipartBody(nzb, args.Title+".nzb", conf.Sabnzbd.Compression, compressionTypes)
+	if err != nil {
+		return err
+	}
 
-	if response, err := request(conf.Sabnzbd, "POST", "api", nil, query, body, writer.FormDataContentType()); err != nil {
+	if response, err := request(conf.Sabnzbd, "POST", "api", nil, query, body, contentType); err != nil {
 		return err
 	} else {
 		var jsonResponse responseStruct
