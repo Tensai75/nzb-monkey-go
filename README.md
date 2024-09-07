@@ -37,6 +37,10 @@ Please also note that the macOS binaries are not signed.
 Feel free to send pull requests.
 
 ## Change log
+#### v0.1.16
+- fix: don't panic on null values in json responses
+- new feature: zip compression support for NZB file uploads to SABnzbd (thanks @BearsWithPasta)
+
 #### v0.1.15
 - adding new search engine nzbindex_beta
 
