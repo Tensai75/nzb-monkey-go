@@ -131,13 +131,13 @@ func jsonSearch(engine SearchEngine, name string) error {
 		if err = json.Unmarshal([]byte(body), &result); err == nil {
 			for _, value := range strings.Split(engine.jsonPath, ".") {
 				if number, err := strconv.Atoi(value); err == nil {
-					if len(result.([]interface{})) > number {
+					if len(result.([]interface{})) > number && result.([]interface{})[number] != nil {
 						result = result.([]interface{})[number]
 					} else {
 						return fmt.Errorf("No results found")
 					}
 				} else {
-					if _, ok := result.(map[string]interface{})[value]; ok {
+					if _, ok := result.(map[string]interface{})[value]; ok && result.(map[string]interface{})[value] != nil {
 						result = result.(map[string]interface{})[value]
 					} else {
 						return fmt.Errorf("No results found")
