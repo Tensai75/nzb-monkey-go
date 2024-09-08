@@ -1,10 +1,14 @@
 package main
 
 import (
+	"archive/zip"
+	"compress/flate"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/atotto/clipboard"
@@ -66,12 +70,9 @@ func execute_push(nzb string, category string) error {
 	if conf.Execute.Passtofile && args.Password != "" {
 		nzbFile += fmt.Sprintf("{{%s}}", args.Password)
 	}
-	nzbFile += ".nzb"
-
-	path = filepath.Join(path, nzbFile)
 
 	// write file
-	if err := os.WriteFile(path, []byte(nzb), os.ModePerm); err != nil {
+	if path, err = writeFile(path, nzbFile, nzb, conf.Execute.SaveAsZip, args.Title); err != nil {
 		return err
 	} else {
 		Log.Succ("The NZB file was saved as '%s'", path)
@@ -97,6 +98,35 @@ func execute_push(nzb string, category string) error {
 
 	return nil
 
+}
+
+func writeFile(path string, fileName string, file string, compress bool, zipFileName string) (string, error) {
+	if compress {
+		path = filepath.Join(path, zipFileName+".zip")
+		archive, err := os.Create(path)
+		if err != nil {
+			return "", err
+		}
+		defer archive.Close()
+		zipWriter := zip.NewWriter(archive)
+		defer zipWriter.Close()
+		zipWriter.RegisterCompressor(zip.Deflate, func(out io.Writer) (io.WriteCloser, error) {
+			return flate.NewWriter(out, flate.BestCompression)
+		})
+		zippedFile, err := zipWriter.Create(fileName + ".nzb")
+		if err != nil {
+			return "", err
+		}
+		if _, err := io.Copy(zippedFile, strings.NewReader(file)); err != nil {
+			return "", err
+		}
+	} else {
+		path = filepath.Join(path, fileName+".nzb")
+		if err := os.WriteFile(path, []byte(file), os.ModePerm); err != nil {
+			return "", err
+		}
+	}
+	return path, nil
 }
 
 func execute_cleanup(path string) {
