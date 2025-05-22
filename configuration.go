@@ -163,7 +163,7 @@ func loadConfig() {
 					}
 				}
 			} else {
-				if key.Name() == "binsearch_alternative" {
+				if key.Name() == "binsearch_alternative" || key.Name() == "nzbindex_beta" {
 					Log.Warn("Searchengine '%s' is no longer available", key.Name())
 				} else {
 					Log.Warn("Unknown searchengine '%s' in configuration file", key.Name())

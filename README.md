@@ -37,14 +37,22 @@ Please also note that the macOS binaries are not signed.
 Feel free to send pull requests.
 
 ## Change log
+
+#### v0.1.17
+
+- fix: update nzbindex and remove nzbindex_beta
+
 #### v0.1.16
+
 - fix: don't panic on null values in json responses
 - new feature: zip compression support for NZB file uploads to SABnzbd (thanks @BearsWithPasta)
 
 #### v0.1.15
+
 - adding new search engine nzbindex_beta
 
 #### v0.1.14
+
 - clean search string for NZBKing & url encode search string (should fix some issues with NZBKing)
 - use cyan instead of blue
 - use nntpPool instead of nntp
@@ -54,18 +62,21 @@ Feel free to send pull requests.
 - complete rewrite of the start and end message search functions
 
 #### v0.1.13
+
 - fix for directsearch not working on some usenet servers which actually return the correct error response for unknown commands
 - better color output support for windows
 - update of all dependencies
 - 32bit builds removed from build script
 
 #### v0.1.12
+
 - new option to have several targets, seperated by commas
 - new option for category subfolders when using EXECUTE
 - update of cleanup routine for better error handling and taking into account the category subfolders
 - fix for success messages not written to the log file
 
 #### v0.1.11
+
 - update of binsearch.info urls (new API)
 - removal of binsearch alternative servers (no longer available)
 - fix for panic if an NZB file with no file entries is returned
@@ -73,13 +84,16 @@ Feel free to send pull requests.
 - new behavior: don't exit in case of unknown values for the searchengines
 
 #### v0.1.10
+
 - fix for wrong error "start date of search range is newer than latest message" [fixes https://github.com/Tensai75/nzb-monkey-go/issues/20]
 - new behavior: the program stops searching after a 100% complete NZB file has been found if best_nzb = true (Thanks @[wilriker](https://github.com/wilriker)). This makes perfectly sense because the first NZB who was found to be 100% complete would be used anyway also if all further search engines were searched as well.
 
 #### v0.1.9
+
 - fix for Basic Auth not working after code refactoring
 
 #### v0.1.8
+
 - fix for wrong category assignment [fixes https://github.com/Tensai75/nzb-monkey-go/issues/18]
 - fix for the "not well-formed (invalid token)" error when the inner XML text contains special HTML characters
 - fix for the wrong search interval and other problems when searching for first and last message number
@@ -88,16 +102,19 @@ Feel free to send pull requests.
 - minor changes
 
 #### v0.1.7
+
 - fix for panic upon connection errors and various problems with connection pool (Thanks @[wilriker](https://github.com/wilriker)) [fixes https://github.com/Tensai75/nzb-monkey-go/issues/14]
 - minor code refactoring and clean-ups (Thanks @[wilriker](https://github.com/wilriker))
 - addition of a GitHub Action for automatic builds for several architectures, including debian packages for linux and darwin builds (Thanks @[reloxx13](https://github.com/reloxx13))
 
 #### v0.1.6
+
 - possible bug fix for the occasional "too many connections" errors
 - bug fix for the progress bar not progressing for further groups after first group was scanned
 - improved indexing of message subjects (improved hashing of file names for better differentiation)
 
 #### v0.1.5
+
 - Linux version: the config file is moved to `~/.config/nzb-monkey-go.conf` for better compatibility with packed distribution (an existing config.txt file in the application directory will be automatically moved to the new location during the first execution)
 - Linux version: if debug is enabled, the log file is now created as `/tmp/nzb-monkey-go.log` for better compatibility with packed distribution
 - All versions: the `nzbsavepath` in the `[EXECUTE]` section of the config file must now be an absolute path or a relative path to the user's home directory
@@ -106,9 +123,11 @@ Feel free to send pull requests.
 - executables are now named `nzb-monkey-go(.exe)` (previously `nzbmonkey-go(.exe)`)
 
 #### v0.1.4
+
 - Fix: progress bar not updating when scanning for messages
 
 #### v0.1.3
+
 - Fix: in some circumstances when more the one group was specified, only the first group was searched
 - The user is now informed if a NZB file is skipped due to incompleteness
 - NZBLNKs are now checked whether several groups are specified within a single 'g' parameter (to account for malformed NZBLNKs, e.g. where groups are separated by a space or a comma)
@@ -117,28 +136,35 @@ Feel free to send pull requests.
 - Addition of 'first_group_only' config file parameter to search first group only during direct search (based on how messages are stored on news servers, the chance to get different results in different groups is virtually zero)
 
 #### v0.1.2
+
 - Fix: Move arguments and config functions to main() to avoid blocking of SIGINT
 - Graceful handling of manual aborts
 
 #### v0.1.1
+
 - Fix: ignore case if checking for categories (THX @shyper)
 
 #### v0.1.0
+
 - New flag '--register' to force registering the NZBLNK
 
 #### v0.1.0-rc1
+
 - Make SSL check skip a configurable option
 
 #### v0.1.0-beta4
+
 - Fix panic on NNTP connection errors and empty connectionGuard channel if no connection was established.
 
 #### v0.1.0-beta3
+
 - directsearch: new configuration parameter "skip" (default true). If set to true directsearch is skipped if a valid NZB file was already found.
 - Fix for the message scan getting stuck on errors.
 - Fix for incorrect parsing of the configuration file for values containing a "#" character.
 - Reduced default threshold for missing files and segments.
 
 #### v0.1.0-beta2
+
 - Waiting time before exiting the programme is now configurable
 - directsearch: Change of the configurable time span for the search backwards from days to hours.
 
@@ -148,4 +174,5 @@ Feel free to send pull requests.
 - Bug fixes and elimination of race conditions
 
 #### v0.1.0-beta1
+
 - first public release
