@@ -38,6 +38,11 @@ Feel free to send pull requests.
 
 ## Change log
 
+#### v0.1.18
+
+- refactoring of the search for the first and last message of the NZB direct search (should hopefully help to avoid errors in some strange edge cases)
+- fix: remove nzbindex_beta from default config
+
 #### v0.1.17
 
 - fix: update nzbindex and remove nzbindex_beta
