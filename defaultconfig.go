@@ -118,14 +118,12 @@ best_nzb = true
 # More than 1 server with the same order number is allowed
 # Enable NZBIndex
 nzbindex =  1
-# Enable NZBIndex Beta
-nzbindex_beta =  2
 # Enable NZBKing
-nzbking =  3
+nzbking =  2
 # Enable Binsearch
-binsearch =  4
+binsearch =  3
 # Enable nzb direct search (settings for the nzb direct search required)
-directsearch = 5
+directsearch = 4
 
 # Settings for the nzb direct search
 [DIRECTSEARCH]
