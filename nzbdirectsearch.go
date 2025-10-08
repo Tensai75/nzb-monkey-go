@@ -136,7 +136,7 @@ func searchInGroup(group string) error {
 	if currentMessageID >= lastMessageID {
 		return errors.New("no messages found within search range")
 	}
-	Log.Info("Found last message number: %v / Date: %v", FormatNumberWithApostrophe(lastMessageID), messageDate.Local().Format("02.01.2006 15:04:05 MST"))
+	Log.Info("Found last message number:  %v / Date: %v", FormatNumberWithApostrophe(lastMessageID), messageDate.Local().Format("02.01.2006 15:04:05 MST"))
 	Log.Info("Scanning messages %v to %v (%v messages in total)", FormatNumberWithApostrophe(currentMessageID), FormatNumberWithApostrophe(lastMessageID), FormatNumberWithApostrophe(lastMessageID-currentMessageID+1))
 	directsearchCounter = 0
 	bar := progressbar.NewOptions(lastMessageID-currentMessageID,
@@ -354,7 +354,7 @@ func findMessageByDate(group string, targetDate int64, searchForFirst bool, ctx 
 		noResultError = "no messages found on or after the specified start date"
 		boundaryError = "the newest message in the group is older than the specified start date"
 	} else {
-		description = "   Scanning for last message number ...  "
+		description = "   Scanning for last message number ... "
 		direction = "down"
 		noResultError = "no messages found on or before the specified end date"
 		boundaryError = "the oldest message in the group is newer than the specified end date"
