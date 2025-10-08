@@ -3,6 +3,7 @@ module github.com/Tensai75/nzb-monkey-go
 go 1.19
 
 require (
+	github.com/Tensai75/nntp v0.1.2
 	github.com/Tensai75/nntpPool v0.1.2
 	github.com/Tensai75/nzbparser v0.1.0
 	github.com/Tensai75/subjectparser v0.1.1
@@ -19,7 +20,6 @@ require (
 )
 
 require (
-	github.com/Tensai75/nntp v0.1.2 // indirect
 	github.com/alexflint/go-scalar v1.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
