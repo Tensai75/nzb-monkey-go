@@ -1,6 +1,6 @@
 module github.com/Tensai75/nzb-monkey-go
 
-go 1.19
+go 1.23.3
 
 require (
 	github.com/Tensai75/nntp v0.1.2
@@ -12,6 +12,7 @@ require (
 	github.com/atotto/clipboard v0.1.4
 	github.com/dustin/go-humanize v1.0.1
 	github.com/fatih/color v1.17.0
+	github.com/jacoblockett/gosan/v3 v3.0.1
 	github.com/schollz/progressbar/v3 v3.14.6
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	golang.org/x/exp v0.0.0-20240904232852-e7e105dedf7e

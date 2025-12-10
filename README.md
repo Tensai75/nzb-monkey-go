@@ -38,6 +38,10 @@ Feel free to send pull requests.
 
 ## Change log
 
+#### v0.1.19
+
+-fix: sanitize filenname before writing the NZB file (closes #35)
+
 #### v0.1.18
 
 - refactoring of the search for the first and last message of the NZB direct search (should hopefully help to avoid errors in some strange edge cases)

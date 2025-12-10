@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/atotto/clipboard"
+	gosan "github.com/jacoblockett/gosan/v3"
 	"github.com/skratchdot/open-golang/open"
 )
 
@@ -65,14 +66,24 @@ func execute_push(nzb string, category string) error {
 		execute_cleanup(basepath)
 	}
 
-	// make full filename
-	nzbFile := args.Title
+	// sanitize filename
+	gosanOptions := &gosan.FilenameOptions{Replacement: ""}
+	nzbFileName, _ := gosan.Filename(args.Title, gosanOptions)
+
+	// make filenames
+	zipFileName := nzbFileName
 	if conf.Execute.Passtofile && args.Password != "" {
-		nzbFile += fmt.Sprintf("{{%s}}", args.Password)
+		// check if password contains invalid characters for file names
+		password, _ := gosan.Filename(args.Password, gosanOptions)
+		if password != args.Password {
+			Log.Warn("The password contains invalid characters for file names")
+		} else {
+			nzbFileName += fmt.Sprintf("{{%s}}", args.Password)
+		}
 	}
 
 	// write file
-	if path, err = writeFile(path, nzbFile, nzb, conf.Execute.SaveAsZip, args.Title); err != nil {
+	if path, err = writeFile(path, nzbFileName, nzb, conf.Execute.SaveAsZip, zipFileName); err != nil {
 		return err
 	} else {
 		Log.Succ("The NZB file was saved as '%s'", path)
