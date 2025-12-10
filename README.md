@@ -38,6 +38,10 @@ Feel free to send pull requests.
 
 ## Change log
 
+#### v0.1.19-beta
+
+- refactor: use `Terminal=true` in the linux desktop file to open user's default terminal and run the app executable directly (should fix the issue where nzb-monkey-go does not start on some linux distributions)
+
 #### v0.1.18
 
 - refactoring of the search for the first and last message of the NZB direct search (should hopefully help to avoid errors in some strange edge cases)
