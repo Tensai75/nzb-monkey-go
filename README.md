@@ -42,6 +42,7 @@ Feel free to send pull requests.
 
 -fix: sanitize filenname before writing the NZB file (closes #35)
 -refactor: use `Terminal=true` in the linux desktop file to open user's default terminal and run the app executable directly (should fix the issue where nzb-monkey-go does not start on some linux distributions)(closes #34)
+-fix: provide NZBLNK argument in single quotes in the linux desktop file in order to avoid problems with special characters in the NZBLNK interpreted by the shell
 
 #### v0.1.18
 

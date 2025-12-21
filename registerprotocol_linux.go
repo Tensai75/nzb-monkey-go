@@ -24,7 +24,7 @@ func registerProtocol() {
 
 	desktopFilePath = filepath.Join(homeDir, ".local/share/applications")
 	desktopFile = filepath.Join(desktopFilePath, "nzblnk.desktop")
-	desktopCommand = fmt.Sprintf("%s %%u", appExec)
+	desktopCommand = fmt.Sprintf("%s '%%u'", appExec)
 	desktopFileContent = fmt.Sprintf(`[Desktop Entry]
 Type=Application
 Name=NZBlnk
