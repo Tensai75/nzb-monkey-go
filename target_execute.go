@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/atotto/clipboard"
-	gosan "github.com/jacoblockett/gosan/v3"
+	"github.com/nilsocket/svach"
 	"github.com/skratchdot/open-golang/open"
 )
 
@@ -67,14 +67,14 @@ func execute_push(nzb string, category string) error {
 	}
 
 	// sanitize filename
-	gosanOptions := &gosan.FilenameOptions{Replacement: ""}
-	nzbFileName, _ := gosan.Filename(args.Title, gosanOptions)
+	sanitize, _ := svach.WithOpts("", 255)
+	nzbFileName := sanitize.Name(args.Title)
 
 	// make filenames
 	zipFileName := nzbFileName
 	if conf.Execute.Passtofile && args.Password != "" {
 		// check if password contains invalid characters for file names
-		password, _ := gosan.Filename(args.Password, gosanOptions)
+		password := sanitize.Name(args.Password)
 		if password != args.Password {
 			Log.Warn("The password contains invalid characters for file names")
 		} else {

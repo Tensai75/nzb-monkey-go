@@ -12,7 +12,7 @@ require (
 	github.com/atotto/clipboard v0.1.4
 	github.com/dustin/go-humanize v1.0.1
 	github.com/fatih/color v1.18.0
-	github.com/jacoblockett/gosan/v3 v3.0.1
+	github.com/nilsocket/svach v0.0.2
 	github.com/schollz/progressbar/v3 v3.18.0
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	golang.org/x/exp v0.0.0-20251209150349-8475f28825e9
