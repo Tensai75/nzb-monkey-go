@@ -491,6 +491,7 @@ func findMessageByDateOverview(begin, end int, group string) ([]nntp.MessageOver
 				lastError = err
 				return
 			}
+			defer pool.Put(conns[i])
 			messages, err := conns[i].Overview(begin, end)
 			if err != nil {
 				lastError = err
@@ -504,9 +505,6 @@ func findMessageByDateOverview(begin, end int, group string) ([]nntp.MessageOver
 	}
 	go func() {
 		overviews.Wait()
-		for i := range 4 {
-			pool.Put(conns[i])
-		}
 		close(messagesChannel)
 	}()
 	select {
@@ -517,8 +515,11 @@ func findMessageByDateOverview(begin, end int, group string) ([]nntp.MessageOver
 		return messageOverview, nil
 	case <-time.After(overviewTimeout):
 		for i := range 4 {
-			conns[i].Close()
+			if conns[i] != nil {
+				conns[i].Close()
+			}
 		}
+		Log.Debug("Overview request timed out for range %d - %d", begin, end)
 		lastError = fmt.Errorf("overview request timed out for range %d - %d", begin, end)
 		return nil, lastError
 	}
