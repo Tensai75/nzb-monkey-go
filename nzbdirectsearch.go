@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"crypto/md5"
 	"encoding/hex"
@@ -23,11 +24,17 @@ import (
 
 const overviewStep = 1000
 
+var overviewTimeout = 5 * time.Second
+var overviewRetries = 3
+
 var directsearchHits = make(map[string]map[string]nzbparser.NzbFile)
 var directsearchCounter uint64
+var overviewReaderCounter uint64
+var linesCounter uint64
 var startDate int64
 var endDate int64
 var mutex = sync.Mutex{}
+var overviewLines = make(chan string, 10000)
 
 type messageResult struct {
 	MessageNumber int
@@ -56,13 +63,17 @@ func nzbdirectsearch(engine SearchEngine, name string) error {
 	if conf.Directsearch.Hours == 0 {
 		conf.Directsearch.Hours = 12
 	}
-	if conf.Directsearch.Scans == 0 {
-		conf.Directsearch.Scans = 50
-	}
 	if conf.Directsearch.Step == 0 {
 		conf.Directsearch.Step = 20000
 	}
-
+	if conf.Directsearch.OverviewTimeout == 0 {
+		conf.Directsearch.OverviewTimeout = 5
+	}
+	if conf.Directsearch.OverviewRetries == 0 {
+		conf.Directsearch.OverviewRetries = 3
+	}
+	overviewTimeout = time.Duration(conf.Directsearch.OverviewTimeout) * time.Second
+	overviewRetries = conf.Directsearch.OverviewRetries
 	var searchInGroupError error
 
 	if err := initNntpPool(); err != nil {
@@ -107,43 +118,46 @@ func nzbdirectsearch(engine SearchEngine, name string) error {
 }
 
 func searchInGroup(group string) error {
-	var searchesWG sync.WaitGroup
-	var searchesGuard = make(chan struct{}, conf.Directsearch.Scans)
-	defer close(searchesGuard)
-	var searchesErrorChannel = make(chan error, 1)
-	defer close(searchesErrorChannel)
-	var searchesCtx, searchesCancel = context.WithCancel(context.Background())
-	defer searchesCancel() // Make sure it's called to release resources even if no errors
-	var step = conf.Directsearch.Step
+
+	var searchesCtx = context.Background()
 	startDate = args.UnixDate - int64(conf.Directsearch.Hours*60*60)
 	endDate = args.UnixDate + int64(60*60*conf.Directsearch.ForwardHours)
 	if !args.IsTimestamp {
 		endDate += 60 * 60 * 24
 	}
-	var currentMessageID, lastMessageID int
+	var firstMessageID, lastMessageID int
 	var messageDate time.Time
 	var err error
+
+	// scann for first message
 	Log.Info("Scanning from %s to %s", time.Unix(startDate, 0).Format("02.01.2006 15:04:05 MST"), time.Unix(endDate, 0).Format("02.01.2006 15:04:05 MST"))
-	currentMessageID, messageDate, err = getFirstMessageNumberFromGroup(group, startDate, endDate, searchesCtx)
+	firstMessageID, messageDate, err = getFirstMessageNumberFromGroup(group, startDate, endDate, searchesCtx)
 	if err != nil {
 		return fmt.Errorf("error while scanning group '%s' for the first message: %v", group, err)
 	}
-	Log.Info("Found first message number: %v / Date: %v", FormatNumberWithApostrophe(currentMessageID), messageDate.Local().Format("02.01.2006 15:04:05 MST"))
+	Log.Info("Found first message number: %v / Date: %v", FormatNumberWithApostrophe(firstMessageID), messageDate.Local().Format("02.01.2006 15:04:05 MST"))
+
+	// scan for last message
 	lastMessageID, messageDate, err = getLastMessageNumberFromGroup(group, endDate, startDate, searchesCtx)
 	if err != nil {
 		return fmt.Errorf("error while scanning group '%s' for the last message: %v", group, err)
 	}
-	if currentMessageID >= lastMessageID {
+	if firstMessageID >= lastMessageID {
 		return errors.New("no messages found within search range")
 	}
 	Log.Info("Found last message number:  %v / Date: %v", FormatNumberWithApostrophe(lastMessageID), messageDate.Local().Format("02.01.2006 15:04:05 MST"))
-	Log.Info("Scanning messages %v to %v (%v messages in total)", FormatNumberWithApostrophe(currentMessageID), FormatNumberWithApostrophe(lastMessageID), FormatNumberWithApostrophe(lastMessageID-currentMessageID+1))
+
+	// start searching messages
+	Log.Info("Scanning messages %v to %v (%v messages in total)", FormatNumberWithApostrophe(firstMessageID), FormatNumberWithApostrophe(lastMessageID), FormatNumberWithApostrophe(lastMessageID-firstMessageID+1))
+
+	// setup progress bar
 	directsearchCounter = 0
-	bar := progressbar.NewOptions(lastMessageID-currentMessageID,
+	bar := progressbar.NewOptions(lastMessageID-firstMessageID,
 		progressbar.OptionSetDescription("   Scanning messages ...                "),
 		progressbar.OptionSetRenderBlankState(true),
 		progressbar.OptionThrottle(time.Millisecond*100),
 		progressbar.OptionShowElapsedTimeOnFinish(),
+		progressbar.OptionShowCount(),
 	)
 	go func(bar *progressbar.ProgressBar, ctx context.Context) {
 		for {
@@ -155,133 +169,69 @@ func searchInGroup(group string) error {
 			}
 		}
 	}(bar, searchesCtx)
-	for currentMessageID <= lastMessageID {
-		var lastMessage int
-		if currentMessageID+step > lastMessageID {
-			lastMessage = lastMessageID
-		} else {
-			lastMessage = currentMessageID + step
-		}
-		searchesGuard <- struct{}{} // will block if guard channel is already filled
-		searchesWG.Add(1)
-		go func(ctx context.Context, currentMessageID int, lastMessage int, group string) {
-			defer func() {
-				searchesWG.Done()
-				<-searchesGuard
-			}()
-			if err := searchMessages(ctx, currentMessageID, lastMessage, group); err != nil {
-				select {
-				case searchesErrorChannel <- err:
-				default:
-				}
-				searchesCancel()
-				return
 
-			}
-		}(searchesCtx, currentMessageID, lastMessage, group)
-		// update currentMessageID for next request
-		currentMessageID = lastMessage + 1
+	// initialize wait groups
+	searches := sync.WaitGroup{}
+	scanners := sync.WaitGroup{}
+
+	// start line scanners
+	Log.Debug("Starting line scanners.")
+	for range 5 {
+		scanners.Go(func() {
+			lineScanner(searchesCtx, group)
+		})
 	}
-	searchesWG.Wait()
-	if searchesCtx.Err() != nil {
-		fmt.Println()
-		return <-searchesErrorChannel
+
+	var first, last int
+	last = firstMessageID - 1
+
+	// start overview readers
+	for last < lastMessageID {
+		first = last + 1
+		last = min(first+conf.Directsearch.Step, lastMessageID)
+		startOverviewSearch(searchesCtx, &searches, group, first, last, 0)
 	}
-	searchesCancel()
+
+	searches.Wait()
+	Log.Debug("All %s overview readers completed with %s messages read.", FormatNumberWithApostrophe(int(overviewReaderCounter)), FormatNumberWithApostrophe(int(directsearchCounter)))
+	close(overviewLines)
+	scanners.Wait()
+	Log.Debug("All line scanners completed with %s lines processed.", FormatNumberWithApostrophe(int(linesCounter)))
 	bar.Finish()
 	fmt.Println()
+	if int(maxConn) < conf.Directsearch.Connections {
+		fmt.Println()
+		Log.Info("%s", yellow(fmt.Sprintf("Maximum connections used: %d (configured: %d)", maxConn, conf.Directsearch.Connections)))
+		Log.Info("%s", yellow("Consider increasing the 'step' setting to speed up the search."))
+		fmt.Println()
+	}
 	return nil
 }
 
-func searchMessages(ctx context.Context, firstMessage int, lastMessage int, group string) error {
-	select {
-	case <-ctx.Done():
-		return nil // Error somewhere, terminate
-	default: // required, otherwise it will block
-	}
-	conn, firstMessageID, lastMessageID, err := switchToGroup(group, ctx)
+func startOverviewSearch(searchesCtx context.Context, searches *sync.WaitGroup, group string, first, last, restart int) error {
+	conn, _, _, err := switchToGroup(group)
 	if err != nil {
-		return err
+		pool.Put(conn)
+		return fmt.Errorf("unable to connect to the usenet server: %v", err)
 	}
-	defer pool.Put(conn)
-	if firstMessage < firstMessageID {
-		firstMessage = firstMessageID
-	}
-	if lastMessage > lastMessageID {
-		lastMessage = lastMessageID
-	}
-	select {
-	case <-ctx.Done():
-		return nil // Error somewhere, terminate
-	default: // required, otherwise it will block
-	}
-	results, err := conn.Overview(firstMessage, lastMessage)
+	reader, err := conn.OverviewReader(first, last)
 	if err != nil {
+		pool.Put(conn)
 		return fmt.Errorf("error retrieving message overview from the usenet server while searching in group '%s': %v", group, err)
 	}
-	for _, overview := range results {
-		select {
-		case <-ctx.Done():
-			return nil // Error somewhere, terminate
-		default: // required, otherwise it will block
-		}
-		currentDate := overview.Date.Unix()
-		if currentDate >= endDate {
-			return nil
-		}
-		subject := html.UnescapeString(strings.ToValidUTF8(overview.Subject, ""))
-		if strings.Contains(strings.ToLower(subject), strings.ToLower(args.Header)) {
-			if subject, err := subjectparser.Parse(subject); err == nil {
-				var date int64
-				if date = overview.Date.Unix(); date < 0 {
-					date = 0
-				}
-				poster := strings.ToValidUTF8(overview.From, "")
-				// make hashes
-				headerHash := GetMD5Hash(subject.Header + poster + strconv.Itoa(subject.TotalFiles))
-				fileHash := GetMD5Hash(headerHash + subject.Filename + strconv.Itoa(subject.File) + strconv.Itoa(subject.TotalSegments))
-				mutex.Lock()
-				if _, ok := directsearchHits[headerHash]; !ok {
-					directsearchHits[headerHash] = make(map[string]nzbparser.NzbFile)
-				}
-				if _, ok := directsearchHits[headerHash][fileHash]; !ok {
-					directsearchHits[headerHash][fileHash] = nzbparser.NzbFile{
-						Groups:       []string{group},
-						Subject:      subject.Subject,
-						Poster:       poster,
-						Number:       subject.File,
-						Filename:     subject.Filename,
-						Basefilename: subject.Basefilename,
-					}
-				}
-				file := directsearchHits[headerHash][fileHash]
-				if file.Groups[len(file.Groups)-1] != group {
-					file.Groups = append(file.Groups, html.EscapeString(group))
-				}
-				if subject.Segment == 1 {
-					file.Subject = subject.Subject
-				}
-				if int(date) > file.Date {
-					file.Date = int(date)
-				}
-				file.Segments = append(file.Segments, nzbparser.NzbSegment{
-					Number: subject.Segment,
-					Id:     html.EscapeString(strings.Trim(overview.MessageId, "<>")),
-					Bytes:  overview.Bytes,
-				})
-				directsearchHits[headerHash][fileHash] = file
-				mutex.Unlock()
-			}
-		}
-		atomic.AddUint64(&directsearchCounter, 1)
-	}
+	// Wrap the reader with a larger buffer to handle long overview lines
+	// Some NNTP servers can return very long overview lines (>4KB default buffer)
+	largeReader := bufio.NewReaderSize(reader, 128*1024) // 128KB buffer
+	searches.Go(func() {
+		overviewReader(searchesCtx, searches, conn, group, largeReader, first, last, restart)
+	})
 	return nil
 }
 
-func switchToGroup(group string, ctx context.Context) (*nntpPool.NNTPConn, int, int, error) {
-	conn, err := pool.Get(ctx)
+func switchToGroup(group string) (*nntpPool.NNTPConn, int, int, error) {
+	conn, err := pool.Get(context.TODO())
 	if err != nil {
-		return nil, 0, 0, fmt.Errorf("unable to connect to the usenet server: %v", err)
+		return nil, 0, 0, err
 	}
 	_, firstMessageID, lastMessageID, err := conn.Group(group)
 	if err != nil {
@@ -320,16 +270,11 @@ func getLastMessageNumberFromGroup(group string, endDate int64, startDate int64,
 
 // Common binary search function for finding messages by date
 func findMessageByDate(group string, targetDate int64, searchForFirst bool, ctx context.Context) (int, time.Time, error) {
-	conn, err := pool.Get(ctx)
-	if err != nil {
-		return 0, time.Time{}, fmt.Errorf("failed to get connection: %w", err)
-	}
-	defer pool.Put(conn)
-
-	_, firstMessageNumber, lastMessageNumber, err := conn.Group(group)
+	conn, firstMessageNumber, lastMessageNumber, err := switchToGroup(group)
 	if err != nil {
 		return 0, time.Time{}, fmt.Errorf("failed to get group info: %w", err)
 	}
+	pool.Put(conn)
 
 	// Check if group is empty
 	if firstMessageNumber >= lastMessageNumber {
@@ -415,9 +360,14 @@ func findMessageByDate(group string, targetDate int64, searchForFirst bool, ctx 
 		}
 
 		// Request overview for the calculated range
-		results, err := conn.Overview(overviewStart, overviewEnd)
-		if err != nil {
-			return 0, time.Time{}, fmt.Errorf("overview request failed for range %d-%d: %w", overviewStart, overviewEnd, err)
+		results := []nntp.MessageOverview{}
+		for i := range 3 {
+			results, err = findMessageByDateOverview(overviewStart, overviewEnd, group)
+			if err == nil {
+				break
+			} else if i == 2 {
+				return 0, time.Time{}, fmt.Errorf("overview request failed after 3 attempts for range %d-%d: %w", overviewStart, overviewEnd, err)
+			}
 		}
 
 		// Handle empty results - messages might be deleted in this range
@@ -528,6 +478,52 @@ func findMessageByDate(group string, targetDate int64, searchForFirst bool, ctx 
 	return 0, time.Time{}, errors.New(noResultError)
 }
 
+func findMessageByDateOverview(begin, end int, group string) ([]nntp.MessageOverview, error) {
+	messagesChannel := make(chan []nntp.MessageOverview, 1)
+	overviews := sync.WaitGroup{}
+	lastError := error(nil)
+	conns := make([]*nntpPool.NNTPConn, 4)
+	for i := range 4 {
+		overviews.Go(func() {
+			var err error
+			conns[i], _, _, err = switchToGroup(group)
+			if err != nil {
+				lastError = err
+				return
+			}
+			messages, err := conns[i].Overview(begin, end)
+			if err != nil {
+				lastError = err
+				return
+			}
+			select {
+			case messagesChannel <- messages:
+			default:
+			}
+		})
+	}
+	go func() {
+		overviews.Wait()
+		for i := range 4 {
+			pool.Put(conns[i])
+		}
+		close(messagesChannel)
+	}()
+	select {
+	case messageOverview, ok := <-messagesChannel:
+		if !ok {
+			return nil, lastError
+		}
+		return messageOverview, nil
+	case <-time.After(overviewTimeout):
+		for i := range 4 {
+			conns[i].Close()
+		}
+		lastError = fmt.Errorf("overview request timed out for range %d - %d", begin, end)
+		return nil, lastError
+	}
+}
+
 // Helper function to scan results for target date
 func scanResultsForTarget(results []nntp.MessageOverview, targetDate int64, searchForFirst bool) (nntp.MessageOverview, bool) {
 	if searchForFirst {
@@ -584,4 +580,150 @@ func FormatNumberWithApostrophe(n int) string {
 	}
 
 	return negative + strings.Join(parts, "'")
+}
+
+func overviewReader(ctx context.Context, searches *sync.WaitGroup, conn *nntpPool.NNTPConn, group string, reader *bufio.Reader, first, last, restart int) {
+	atomic.AddUint64(&overviewReaderCounter, 1)
+	for i := 1; ; i++ {
+		select {
+		case <-ctx.Done():
+			conn.Close()
+			pool.Put(conn)
+			return // Error somewhere, terminate
+		default: // required, otherwise it will block
+		}
+		lineChan := make(chan string, 1)
+		errorChan := make(chan error, 1)
+		go func(r *bufio.Reader) {
+			line, err := r.ReadString('\n')
+			if err != nil {
+				errorChan <- err
+				lineChan <- ""
+			} else {
+				lineChan <- strings.TrimSpace(line)
+			}
+		}(reader)
+		select {
+		case <-ctx.Done():
+			conn.Close()
+			pool.Put(conn)
+			return // Error somewhere, terminate
+		case line := <-lineChan:
+			if line == "" {
+				conn.Close()
+				pool.Put(conn)
+				select {
+				case err := <-errorChan:
+					Log.Debug("Overview reader error at line %d for range %d - %d: %v", i, first, last, err)
+				default:
+					Log.Debug("Overview reader error at line %d for range %d - %d: unknown error", i, first, last)
+				}
+				maybeRestartOverviewSearch(i, first, last, ctx, searches, group, restart)
+				return
+			}
+			if line == "." {
+				pool.Put(conn)
+				return
+			}
+			if strings.Contains(strings.ToLower(line), strings.ToLower(args.Header)) {
+				overviewLines <- line
+			} else {
+				atomic.AddUint64(&directsearchCounter, 1)
+			}
+		case <-time.After(overviewTimeout):
+			conn.Close()
+			pool.Put(conn)
+			Log.Debug("Overview reader timeout at line %d for range %d - %d", i, first, last)
+			maybeRestartOverviewSearch(i, first, last, ctx, searches, group, restart)
+			return
+		}
+	}
+}
+
+func maybeRestartOverviewSearch(lineNumber, first, last int, ctx context.Context, searches *sync.WaitGroup, group string, restart int) {
+	if first+lineNumber-1 > last {
+		return
+	}
+	if restart >= overviewRetries {
+		Log.Error("Overview reader for range %d - %d failed after %d retries.", first, last, restart)
+		return
+	}
+	if lineNumber != 1 {
+		restart = 0
+	} else {
+		restart++
+	}
+	Log.Debug("Restarting overview reader for range %d - %d", first+lineNumber-1, last)
+	err := startOverviewSearch(ctx, searches, group, first+lineNumber-1, last, restart)
+	if err != nil {
+		Log.Error("Failed to restart overview reader: %v", err)
+	}
+}
+
+func lineScanner(ctx context.Context, group string) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case line, ok := <-overviewLines:
+			if !ok {
+				return
+			}
+			atomic.AddUint64(&linesCounter, 1)
+			overview, err := nntp.ParseOverviewLine(line)
+			if err != nil {
+				Log.Debug("Failed to parse message line \"%s\": %v", line, err)
+				continue
+			}
+			currentDate := overview.Date.Unix()
+			if currentDate > endDate || currentDate < startDate {
+				continue
+			}
+			subject := html.UnescapeString(strings.ToValidUTF8(overview.Subject, ""))
+			if strings.Contains(strings.ToLower(subject), strings.ToLower(args.Header)) {
+				if subject, err := subjectparser.Parse(subject); err == nil {
+					var date int64
+					if date = overview.Date.Unix(); date < 0 {
+						date = 0
+					}
+					poster := strings.ToValidUTF8(overview.From, "")
+					// make hashes
+					headerHash := GetMD5Hash(subject.Header + poster + strconv.Itoa(subject.TotalFiles))
+					fileHash := GetMD5Hash(headerHash + subject.Filename + strconv.Itoa(subject.File) + strconv.Itoa(subject.TotalSegments))
+					mutex.Lock()
+					if _, ok := directsearchHits[headerHash]; !ok {
+						directsearchHits[headerHash] = make(map[string]nzbparser.NzbFile)
+					}
+					if _, ok := directsearchHits[headerHash][fileHash]; !ok {
+						directsearchHits[headerHash][fileHash] = nzbparser.NzbFile{
+							Groups:       []string{group},
+							Subject:      subject.Subject,
+							Poster:       poster,
+							Number:       subject.File,
+							Filename:     subject.Filename,
+							Basefilename: subject.Basefilename,
+						}
+					}
+					file := directsearchHits[headerHash][fileHash]
+					if file.Groups[len(file.Groups)-1] != group {
+						file.Groups = append(file.Groups, html.EscapeString(group))
+					}
+					if subject.Segment == 1 {
+						file.Subject = subject.Subject
+					}
+					if int(date) > file.Date {
+						file.Date = int(date)
+					}
+					file.Segments = append(file.Segments, nzbparser.NzbSegment{
+						Number: subject.Segment,
+						Id:     html.EscapeString(strings.Trim(overview.MessageId, "<>")),
+						Bytes:  overview.Bytes,
+					})
+					directsearchHits[headerHash][fileHash] = file
+					mutex.Unlock()
+				}
+			}
+			atomic.AddUint64(&directsearchCounter, 1)
+		}
+	}
 }

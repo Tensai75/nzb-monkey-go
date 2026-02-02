@@ -15,6 +15,7 @@ type Logger struct {
 	Warn  func(string, ...interface{})
 	Info  func(string, ...interface{})
 	Succ  func(string, ...interface{})
+	Debug func(string, ...interface{})
 }
 
 // global error logger variables
@@ -26,6 +27,7 @@ var (
 		Warn:  logWarn,
 		Info:  logInfo,
 		Succ:  logSuccess,
+		Debug: logDebug,
 	}
 )
 
@@ -44,6 +46,10 @@ func logInfo(logText string, vars ...interface{}) {
 
 func logSuccess(logText string, vars ...interface{}) {
 	logEntry("success", logText, vars...)
+}
+
+func logDebug(logText string, vars ...interface{}) {
+	logEntry("debug", logText, vars...)
 }
 
 func logEntry(logType string, logText string, vars ...interface{}) {
@@ -89,6 +95,11 @@ func logEntry(logType string, logText string, vars ...interface{}) {
 		color.Set(color.FgGreen)
 		fmt.Printf("   SUCCESS:  %s\n", fmt.Sprintf(logText, vars...))
 		color.Unset()
+	}
+
+	// log debug
+	if logType == "debug" && args.Debug {
+		logger.Printf("DEBUG: %s\n", stripansi.Strip(strings.Trim(fmt.Sprintf(logText, vars...), "\n")))
 	}
 
 }

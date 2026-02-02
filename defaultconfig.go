@@ -137,16 +137,18 @@ ssl = false
 username = ""
 # Your usenet account password
 password = ""
-# Maximum allowed connections to your usenet server (default = 20)
+# Number of connections to use for the overview requests (default = 20)
 connections = 20
 # Number of hours to search backward from the provided date (default = 12)
 hours = 12
 # Number of hours to search forward from the provided date (default = 12)
 forward_hours = 12
-# Number of parallel scans (default = 50)
-scans = 50
-# Number of articles to load per scan (default = 20000)
+# Number of articles to read per overview request (default = 20000)
 step = 20000
+# Timeout in seconds for overview requests (default = 5)
+overview_timeout = 5
+# Number of retries for overview requests (default = 3)
+overview_retries = 3
 # Skip direct search when using best_nzb and a good NZB file has already been found
 skip = true
 # Search only in the first group if several groups are provided

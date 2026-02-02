@@ -1,13 +1,15 @@
 package main
 
 import (
+	"strings"
 	"time"
 
 	"github.com/Tensai75/nntpPool"
 )
 
 var (
-	pool nntpPool.ConnectionPool
+	pool    nntpPool.ConnectionPool
+	maxConn uint32
 )
 
 func initNntpPool() error {
@@ -19,7 +21,23 @@ func initNntpPool() error {
 			case v := <-nntpPool.LogChan:
 				Log.Info("NNTPPool%v\n", v)
 			case w := <-nntpPool.WarnChan:
-				Log.Warn("NNTPPool%v\n", w.Error())
+				warning := w.Error()
+				if strings.Contains(warning, "502") {
+					Log.Debug("NNTPPool%v\n", warning)
+				} else {
+					Log.Warn("NNTPPool%v\n", warning)
+				}
+			}
+		}
+	}()
+
+	go func() {
+		for {
+			time.Sleep(5 * time.Second)
+			used, total := pool.Conns()
+			Log.Debug("NNTPPool: %d of %d connections in use", used, total)
+			if total > maxConn {
+				maxConn = total
 			}
 		}
 	}()
@@ -35,8 +53,9 @@ func initNntpPool() error {
 		ConnWaitTime:          time.Duration(10) * time.Second,
 		MaxConns:              uint32(conf.Directsearch.Connections),
 		IdleTimeout:           30 * time.Second,
+		HealthCheck:           true,
 		MaxConnErrors:         3,
-		MaxTooManyConnsErrors: 3,
+		MaxTooManyConnsErrors: 0,
 	}, 0)
 	if err != nil {
 		return err
