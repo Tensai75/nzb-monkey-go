@@ -38,6 +38,30 @@ Feel free to send pull requests.
 
 ## Change log
 
+### v0.2.0
+
+#### New feature: improved directsearch with streaming overview reading for better reliability and performance
+
+##### Main changes
+
+- Replaced directsearch batch overview processing with streaming line-by-line reading
+- Added overviewReader() function that reads individual overview lines from NNTP server
+- Decoupled reading lines from processing of matching lines for better concurrency
+- Added OverviewTimeout configuration parameter (default: 5 seconds)
+- Added OverviewRetries configuration parameter (default: 3 retries)
+- Implemented timeout handling with automatic restart of failed overview readers
+- Added recovery mechanism for partial failures via maybeRestartOverviewSearch()
+
+##### Additional changes
+
+- Added Debug() function to Logger struct for debug-level logging
+- Debug messages only written to log file (not console) when debug mode enabled
+- Added debug logging for connection pool status (every 5 seconds)
+- Improved warning filtering (502 errors logged as debug instead of warnings)
+- Updated Go version from 1.24.0 to 1.25.0
+- Updated multiple dependencies (nntp, nntpPool, progressbar, etc.)
+- Various transitive dependency updates
+
 #### v0.1.19
 
 - fix: sanitize filenname before writing the NZB file (closes #35)
