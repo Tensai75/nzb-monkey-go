@@ -479,23 +479,40 @@ func findMessageByDate(group string, targetDate int64, searchForFirst bool, ctx 
 }
 
 func findMessageByDateOverview(begin, end int, group string) ([]nntp.MessageOverview, error) {
+	Log.Debug("Overview request started for range %d - %d", begin, end)
+	ctx, cancel := context.WithCancel(context.Background())
 	messagesChannel := make(chan []nntp.MessageOverview, 1)
 	overviews := sync.WaitGroup{}
-	lastError := error(nil)
+	var lastError atomic.Value
 	conns := make([]*nntpPool.NNTPConn, 4)
 	for i := range 4 {
 		overviews.Go(func() {
 			var err error
 			conns[i], _, _, err = switchToGroup(group)
 			if err != nil {
-				lastError = err
-				return
+				select {
+				case <-ctx.Done():
+					return
+				default:
+					lastError.Store(err)
+					return
+				}
 			}
 			defer pool.Put(conns[i])
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
 			messages, err := conns[i].Overview(begin, end)
 			if err != nil {
-				lastError = err
-				return
+				select {
+				case <-ctx.Done():
+					return
+				default:
+					lastError.Store(err)
+					return
+				}
 			}
 			select {
 			case messagesChannel <- messages:
@@ -506,22 +523,27 @@ func findMessageByDateOverview(begin, end int, group string) ([]nntp.MessageOver
 	go func() {
 		overviews.Wait()
 		close(messagesChannel)
+		Log.Debug("Overview request completed for range %d - %d", begin, end)
 	}()
 	select {
 	case messageOverview, ok := <-messagesChannel:
+		cancel()
 		if !ok {
-			return nil, lastError
+			if err := lastError.Load(); err != nil {
+				return nil, err.(error)
+			}
+			return nil, fmt.Errorf("all overview requests failed")
 		}
 		return messageOverview, nil
 	case <-time.After(overviewTimeout):
+		cancel()
 		for i := range 4 {
 			if conns[i] != nil {
 				conns[i].Close()
 			}
 		}
 		Log.Debug("Overview request timed out for range %d - %d", begin, end)
-		lastError = fmt.Errorf("overview request timed out for range %d - %d", begin, end)
-		return nil, lastError
+		return nil, fmt.Errorf("overview request timed out for range %d - %d", begin, end)
 	}
 }
 
