@@ -38,6 +38,11 @@ Feel free to send pull requests.
 
 ## Change log
 
+#### v0.2.1
+
+- fix: fix for nil pointer panic during first and last message search
+- fix: fix for additional potential race conditions during first and last message search
+
 ### v0.2.0
 
 #### New feature: improved directsearch with streaming overview reading for better reliability and performance
