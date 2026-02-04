@@ -36,6 +36,11 @@ var endDate int64
 var mutex = sync.Mutex{}
 var overviewLines = make(chan string, 10000)
 
+type messageChannel struct {
+	messageID int
+	date      time.Time
+	err       error
+}
 type messageResult struct {
 	MessageNumber int
 	Date          time.Time
@@ -125,27 +130,13 @@ func searchInGroup(group string) error {
 	if !args.IsTimestamp {
 		endDate += 60 * 60 * 24
 	}
-	var firstMessageID, lastMessageID int
-	var messageDate time.Time
 	var err error
 
-	// scann for first message
-	Log.Info("Scanning from %s to %s", time.Unix(startDate, 0).Format("02.01.2006 15:04:05 MST"), time.Unix(endDate, 0).Format("02.01.2006 15:04:05 MST"))
-	firstMessageID, messageDate, err = getFirstMessageNumberFromGroup(group, startDate, endDate, searchesCtx)
+	// scan for first and last message
+	firstMessageID, lastMessageID, err := scanForFirstAndLastMessage(group, searchesCtx)
 	if err != nil {
-		return fmt.Errorf("error while scanning group '%s' for the first message: %v", group, err)
+		return err
 	}
-	Log.Info("Found first message number: %v / Date: %v", FormatNumberWithApostrophe(firstMessageID), messageDate.Local().Format("02.01.2006 15:04:05 MST"))
-
-	// scan for last message
-	lastMessageID, messageDate, err = getLastMessageNumberFromGroup(group, endDate, startDate, searchesCtx)
-	if err != nil {
-		return fmt.Errorf("error while scanning group '%s' for the last message: %v", group, err)
-	}
-	if firstMessageID >= lastMessageID {
-		return errors.New("no messages found within search range")
-	}
-	Log.Info("Found last message number:  %v / Date: %v", FormatNumberWithApostrophe(lastMessageID), messageDate.Local().Format("02.01.2006 15:04:05 MST"))
 
 	// start searching messages
 	Log.Info("Scanning messages %v to %v (%v messages in total)", FormatNumberWithApostrophe(firstMessageID), FormatNumberWithApostrophe(lastMessageID), FormatNumberWithApostrophe(lastMessageID-firstMessageID+1))
@@ -212,6 +203,70 @@ func searchInGroup(group string) error {
 	return nil
 }
 
+func scanForFirstAndLastMessage(group string, ctx context.Context) (int, int, error) {
+	Log.Info("Scanning for first and last message from %s to %s", time.Unix(startDate, 0).Format("02.01.2006 15:04:05 MST"), time.Unix(endDate, 0).Format("02.01.2006 15:04:05 MST"))
+
+	// get first and last message numbers from group
+	conn, firstMessageNumber, lastMessageNumber, err := switchToGroup(group)
+	if err != nil {
+		return 0, 0, fmt.Errorf("unable to connect to the usenet server: %v", err)
+	}
+	pool.Put(conn)
+
+	// Check if group is empty
+	if firstMessageNumber >= lastMessageNumber {
+		return 0, 0, fmt.Errorf("group '%s' appears to be empty", group)
+	}
+
+	// prepare channels to receive results
+	firstMessageChannel := make(chan messageChannel, 1)
+	lastMessageChannel := make(chan messageChannel, 1)
+
+	// calculate estimated maximum iterations for binary search
+	totalSearchSpace := lastMessageNumber - firstMessageNumber + 1
+	maxIterations := 2 * calcMaxIterations(totalSearchSpace)
+
+	// setup progress bar
+	bar := progressbar.NewOptions(maxIterations,
+		progressbar.OptionSetDescription("   Scanning ... "),
+		progressbar.OptionSetRenderBlankState(true),
+		progressbar.OptionThrottle(time.Millisecond*100),
+		progressbar.OptionShowElapsedTimeOnFinish(),
+		progressbar.OptionUseANSICodes(conf.Directsearch.UseANSICodes),
+	)
+
+	// scan for first message
+	go getFirstMessageNumberFromGroup(group, startDate, endDate, firstMessageNumber, lastMessageNumber, bar, firstMessageChannel, ctx)
+
+	// scan for last message
+	go getLastMessageNumberFromGroup(group, endDate, startDate, firstMessageNumber, lastMessageNumber, bar, lastMessageChannel, ctx)
+
+	// wait for results
+	firstMessageResult := <-firstMessageChannel
+	Log.Debug("First message scan completed.")
+	lastMessageResult := <-lastMessageChannel
+	Log.Debug("Last message scan completed.")
+	close(firstMessageChannel)
+	close(lastMessageChannel)
+	bar.Finish()
+	fmt.Println()
+
+	// handle errors
+	if firstMessageResult.err != nil {
+		return 0, 0, fmt.Errorf("error while scanning group '%s' for the first message: %v", group, firstMessageResult.err)
+	}
+	if lastMessageResult.err != nil {
+		return 0, 0, fmt.Errorf("error while scanning group '%s' for the last message: %v", group, lastMessageResult.err)
+	}
+	if firstMessageResult.messageID >= lastMessageResult.messageID {
+		return 0, 0, errors.New("no messages found within search range")
+	}
+
+	Log.Info("Found first message number: %v / Date: %v", FormatNumberWithApostrophe(firstMessageResult.messageID), firstMessageResult.date.Local().Format("02.01.2006 15:04:05 MST"))
+	Log.Info("Found last message number:  %v / Date: %v", FormatNumberWithApostrophe(lastMessageResult.messageID), lastMessageResult.date.Local().Format("02.01.2006 15:04:05 MST"))
+	return firstMessageResult.messageID, lastMessageResult.messageID, nil
+}
+
 func startOverviewSearch(searchesCtx context.Context, searches *sync.WaitGroup, group string, first, last, restart int) error {
 	conn, _, _, err := switchToGroup(group)
 	if err != nil {
@@ -250,86 +305,56 @@ func GetMD5Hash(text string) string {
 	return hex.EncodeToString(hasher.Sum(nil))
 }
 
-func getFirstMessageNumberFromGroup(group string, startDate int64, endDate int64, ctx context.Context) (int, time.Time, error) {
-	message, date, err := findMessageByDate(group, startDate, true, ctx)
+func getFirstMessageNumberFromGroup(group string, startDate int64, endDate int64, firstMessageNumber int, lastMessageNumber int, bar *progressbar.ProgressBar, firstMessageChannel chan messageChannel, ctx context.Context) {
+	message, date, err := findMessageByDate(group, startDate, true, firstMessageNumber, lastMessageNumber, bar, ctx)
 	if err != nil {
-		return 0, time.Time{}, err
+		firstMessageChannel <- messageChannel{0, time.Time{}, err}
+		return
 	}
 	if date.Unix() > endDate {
-		return 0, time.Time{}, errors.New("the oldest message in the group is newer than the specified end date")
+		firstMessageChannel <- messageChannel{0, time.Time{}, errors.New("the oldest message in the group is newer than the specified end date")}
+		return
 	}
-	return message, date, nil
+	firstMessageChannel <- messageChannel{message, date, nil}
 }
 
-func getLastMessageNumberFromGroup(group string, endDate int64, startDate int64, ctx context.Context) (int, time.Time, error) {
-	message, date, err := findMessageByDate(group, endDate, false, ctx)
+func getLastMessageNumberFromGroup(group string, endDate int64, startDate int64, firstMessageNumber int, lastMessageNumber int, bar *progressbar.ProgressBar, lastMessageChannel chan messageChannel, ctx context.Context) {
+	message, date, err := findMessageByDate(group, endDate, false, firstMessageNumber, lastMessageNumber, bar, ctx)
 	if err != nil {
-		return 0, time.Time{}, err
+		lastMessageChannel <- messageChannel{0, time.Time{}, err}
+		return
 	}
 	if date.Unix() < startDate {
-		return 0, time.Time{}, errors.New("the newest message in the group is older than the specified start date")
+		lastMessageChannel <- messageChannel{0, time.Time{}, errors.New("the newest message in the group is older than the specified start date")}
 	}
-	return message, date, nil
+	lastMessageChannel <- messageChannel{message, date, nil}
 }
 
 // Common binary search function for finding messages by date
-func findMessageByDate(group string, targetDate int64, searchForFirst bool, ctx context.Context) (int, time.Time, error) {
-	conn, firstMessageNumber, lastMessageNumber, err := switchToGroup(group)
-	if err != nil {
-		return 0, time.Time{}, fmt.Errorf("failed to get group info: %w", err)
-	}
-	pool.Put(conn)
-
-	// Check if group is empty
-	if firstMessageNumber >= lastMessageNumber {
-		return 0, time.Time{}, fmt.Errorf("group '%s' appears to be empty", group)
-	}
+func findMessageByDate(group string, targetDate int64, searchForFirst bool, firstMessageNumber int, lastMessageNumber int, bar *progressbar.ProgressBar, ctx context.Context) (int, time.Time, error) {
 
 	low := firstMessageNumber
 	high := lastMessageNumber
 
-	// Calculate estimated maximum iterations for binary search
-	totalSearchSpace := lastMessageNumber - firstMessageNumber + 1
-	maxIterations := calcMaxIterations(totalSearchSpace)
-
-	var description string
 	var direction string
 	var noResultError string
 	var boundaryError string
 
 	if searchForFirst {
-		Log.Info("Searching for first message on or after %s", time.Unix(targetDate, 0).Format("02.01.2006 15:04:05 MST"))
-		description = "   Scanning ... "
 		direction = "up"
 		noResultError = "no messages found on or after the specified start date"
 		boundaryError = "the newest message in the group is older than the specified start date"
 	} else {
-		Log.Info("Searching for last message on or before %s", time.Unix(targetDate, 0).Format("02.01.2006 15:04:05 MST"))
-		description = "   Scanning ... "
 		direction = "down"
 		noResultError = "no messages found on or before the specified end date"
 		boundaryError = "the oldest message in the group is newer than the specified end date"
 	}
 
-	bar := progressbar.NewOptions(maxIterations,
-		progressbar.OptionSetDescription(description),
-		progressbar.OptionSetRenderBlankState(true),
-		progressbar.OptionThrottle(time.Millisecond*100),
-		progressbar.OptionShowElapsedTimeOnFinish(),
-		progressbar.OptionUseANSICodes(conf.Directsearch.UseANSICodes),
-	)
-	defer func() {
-		bar.Finish()
-		fmt.Println()
-	}()
-
 	var lastStep = false
 	var lastResult messageResult
-	iterationCount := 0
 
 	// Binary search for the target message
 	for low <= high {
-		iterationCount++
 
 		// Check for context cancellation
 		select {
@@ -368,6 +393,7 @@ func findMessageByDate(group string, targetDate int64, searchForFirst bool, ctx 
 
 		// Request overview for the calculated range
 		results := []nntp.MessageOverview{}
+		var err error
 		for i := range 3 {
 			results, err = findMessageByDateOverview(overviewStart, overviewEnd, group)
 			if err == nil {
@@ -398,7 +424,7 @@ func findMessageByDate(group string, targetDate int64, searchForFirst bool, ctx 
 			} else {
 				high = overviewStart - 1
 			}
-			bar.Set(iterationCount)
+			bar.Add(1)
 			continue
 		}
 
@@ -442,26 +468,26 @@ func findMessageByDate(group string, targetDate int64, searchForFirst bool, ctx 
 			if targetDate < firstResult.Date.Unix() {
 				high = firstResult.MessageNumber - 1
 				direction = "down"
-				bar.Set(iterationCount)
+				bar.Add(1)
 				continue
 			}
 			if targetDate > lastResult.Date.Unix() {
 				low = lastResult.MessageNumber + 1
 				direction = "up"
-				bar.Set(iterationCount)
+				bar.Add(1)
 				continue
 			}
 		} else {
 			if targetDate > lastResult.Date.Unix() {
 				low = lastResult.MessageNumber + 1
 				direction = "up"
-				bar.Set(iterationCount)
+				bar.Add(1)
 				continue
 			}
 			if targetDate < firstResult.Date.Unix() {
 				high = firstResult.MessageNumber - 1
 				direction = "down"
-				bar.Set(iterationCount)
+				bar.Add(1)
 				continue
 			}
 		}
@@ -479,7 +505,7 @@ func findMessageByDate(group string, targetDate int64, searchForFirst bool, ctx 
 		} else {
 			high = overviewStart - 1
 		}
-		bar.Set(iterationCount)
+		bar.Add(1)
 	}
 
 	return 0, time.Time{}, errors.New(noResultError)
@@ -491,8 +517,8 @@ func findMessageByDateOverview(begin, end int, group string) ([]nntp.MessageOver
 	messagesChannel := make(chan []nntp.MessageOverview, 1)
 	overviews := sync.WaitGroup{}
 	var lastError atomic.Value
-	conns := make([]*nntpPool.NNTPConn, 4)
-	for i := range 4 {
+	conns := make([]*nntpPool.NNTPConn, 3)
+	for i := range 3 {
 		overviews.Go(func() {
 			var err error
 			conns[i], _, _, err = switchToGroup(group)
