@@ -153,7 +153,7 @@ func searchInGroup(group string) error {
 	// setup progress bar
 	directsearchCounter = 0
 	bar := progressbar.NewOptions(lastMessageID-firstMessageID,
-		progressbar.OptionSetDescription("   Scanning messages ...                "),
+		progressbar.OptionSetDescription("   Scanning ... "),
 		progressbar.OptionSetRenderBlankState(true),
 		progressbar.OptionThrottle(time.Millisecond*100),
 		progressbar.OptionShowElapsedTimeOnFinish(),
@@ -294,12 +294,14 @@ func findMessageByDate(group string, targetDate int64, searchForFirst bool, ctx 
 	var boundaryError string
 
 	if searchForFirst {
-		description = "   Scanning for first message number ..."
+		Log.Info("Searching for first message on or after %s", time.Unix(targetDate, 0).Format("02.01.2006 15:04:05 MST"))
+		description = "   Scanning ... "
 		direction = "up"
 		noResultError = "no messages found on or after the specified start date"
 		boundaryError = "the newest message in the group is older than the specified start date"
 	} else {
-		description = "   Scanning for last message number ... "
+		Log.Info("Searching for last message on or before %s", time.Unix(targetDate, 0).Format("02.01.2006 15:04:05 MST"))
+		description = "   Scanning ... "
 		direction = "down"
 		noResultError = "no messages found on or before the specified end date"
 		boundaryError = "the oldest message in the group is newer than the specified end date"
