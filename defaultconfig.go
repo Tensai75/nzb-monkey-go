@@ -156,5 +156,7 @@ skip = true
 first_group_only = false
 # Use ANSI codes for progress bar output
 use_ansi_codes = true
+# Show counter for progress bar
+show_counter = true
 `, "\n")
 }

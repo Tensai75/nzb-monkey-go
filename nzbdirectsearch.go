@@ -152,14 +152,17 @@ func searchInGroup(group string) error {
 
 	// setup progress bar
 	directsearchCounter = 0
-	bar := progressbar.NewOptions(lastMessageID-firstMessageID,
+	progressbarOptions := []progressbar.Option{
 		progressbar.OptionSetDescription("   Scanning ... "),
 		progressbar.OptionSetRenderBlankState(true),
-		progressbar.OptionThrottle(time.Millisecond*100),
+		progressbar.OptionThrottle(time.Millisecond * 100),
 		progressbar.OptionShowElapsedTimeOnFinish(),
-		progressbar.OptionShowCount(),
 		progressbar.OptionUseANSICodes(conf.Directsearch.UseANSICodes),
-	)
+	}
+	if conf.Directsearch.ShowCounter {
+		progressbarOptions = append(progressbarOptions, progressbar.OptionShowCount())
+	}
+	bar := progressbar.NewOptions(lastMessageID-firstMessageID, progressbarOptions...)
 	go func(bar *progressbar.ProgressBar, ctx context.Context) {
 		for {
 			select {

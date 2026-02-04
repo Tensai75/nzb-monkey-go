@@ -93,6 +93,7 @@ type DirectSearch struct {
 	Skip            bool   `ini:"skip"`
 	FirstGroupOnly  bool   `ini:"first_group_only"`
 	UseANSICodes    bool   `ini:"use_ansi_codes"`
+	ShowCounter     bool   `ini:"show_counter"`
 }
 
 // configuration structure
@@ -126,6 +127,7 @@ func loadConfig() {
 			Skip:            true,
 			FirstGroupOnly:  false,
 			UseANSICodes:    true,
+			ShowCounter:     true,
 		},
 	}
 
