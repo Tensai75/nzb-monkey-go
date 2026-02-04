@@ -35,6 +35,9 @@ var startDate int64
 var endDate int64
 var mutex = sync.Mutex{}
 var overviewLines = make(chan string, 10000)
+var bytesCounter atomic.Uint64
+var peakMessagesPerSecond uint64
+var peakBytesPerSecond uint64
 
 type messageChannel struct {
 	messageID int
@@ -180,7 +183,14 @@ func searchInGroup(group string) error {
 	var first, last int
 	last = firstMessageID - 1
 
+	// start peak rate measurement
+	Log.Debug("Starting peak rate measurement.")
+	ticker := time.NewTicker(1 * time.Second)
+	go measurePeakRates(ticker)
+
 	// start overview readers
+	Log.Debug("Starting overview readers.")
+	startTime := time.Now()
 	for last < lastMessageID {
 		first = last + 1
 		last = min(first+conf.Directsearch.Step, lastMessageID)
@@ -193,11 +203,22 @@ func searchInGroup(group string) error {
 	scanners.Wait()
 	Log.Debug("All line scanners completed with %s lines processed.", FormatNumberWithApostrophe(int(linesCounter)))
 	bar.Finish()
+	Log.Debug("Stopping peak rate measurement.")
+	ticker.Stop()
+
+	// display rates
+	duration := time.Since(startTime)
+	formattedDuration := fmt.Sprintf("%dm%ds", int(duration/time.Minute), int((duration%time.Minute)/time.Second))
+	messagesPerSecond := (lastMessageID - firstMessageID + 1) / int(duration.Seconds())
+	bytesPerSecond := bytesCounter.Load() / uint64(duration.Seconds())
+	mbitPerSecond := float64(bytesPerSecond*8) / 1_000_000
+	fmt.Println("")
+	Log.Info("Search completed in %s - %s messages/sec / %.2f Mbit/s (peak: %s messages/sec / %.2f Mbit/s)", formattedDuration, FormatNumberWithApostrophe(messagesPerSecond), mbitPerSecond, FormatNumberWithApostrophe(int(peakMessagesPerSecond)), float64(peakBytesPerSecond*8)/1_000_000)
 	fmt.Println()
-	if int(maxConn) < conf.Directsearch.Connections {
-		fmt.Println()
+
+	if int(maxConn) < conf.Directsearch.Connections && ((lastMessageID-firstMessageID+1)/conf.Directsearch.Step) > conf.Directsearch.Connections {
 		Log.Info("%s", yellow(fmt.Sprintf("Maximum connections used: %d (configured: %d)", maxConn, conf.Directsearch.Connections)))
-		Log.Info("%s", yellow("Consider increasing the 'step' setting to speed up the search."))
+		Log.Info("%s", yellow(fmt.Sprintf("If your internet connection ist fasther than %.2f Mbit/s you should consider increasing the 'step' setting to speed up the search.", float64(peakBytesPerSecond*8)/1_000_000)))
 		fmt.Println()
 	}
 	return nil
@@ -652,6 +673,7 @@ func overviewReader(ctx context.Context, searches *sync.WaitGroup, conn *nntpPoo
 		errorChan := make(chan error, 1)
 		go func(r *bufio.Reader) {
 			line, err := r.ReadString('\n')
+			bytesCounter.Add(uint64(len(line)))
 			if err != nil {
 				errorChan <- err
 				lineChan <- ""
@@ -781,5 +803,24 @@ func lineScanner(ctx context.Context, group string) {
 			}
 			atomic.AddUint64(&directsearchCounter, 1)
 		}
+	}
+}
+
+func measurePeakRates(ticker *time.Ticker) {
+	var lastMessages uint64
+	var lastBytes uint64
+	for range ticker.C {
+		currentMessages := atomic.LoadUint64(&directsearchCounter)
+		currentBytes := bytesCounter.Load()
+		messagesThisSecond := currentMessages - lastMessages
+		bytesThisSecond := currentBytes - lastBytes
+		if messagesThisSecond > peakMessagesPerSecond {
+			peakMessagesPerSecond = messagesThisSecond
+		}
+		if bytesThisSecond > peakBytesPerSecond {
+			peakBytesPerSecond = bytesThisSecond
+		}
+		lastMessages = currentMessages
+		lastBytes = currentBytes
 	}
 }
