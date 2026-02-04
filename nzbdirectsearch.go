@@ -158,6 +158,7 @@ func searchInGroup(group string) error {
 		progressbar.OptionThrottle(time.Millisecond*100),
 		progressbar.OptionShowElapsedTimeOnFinish(),
 		progressbar.OptionShowCount(),
+		progressbar.OptionUseANSICodes(conf.Directsearch.UseANSICodes),
 	)
 	go func(bar *progressbar.ProgressBar, ctx context.Context) {
 		for {
@@ -312,6 +313,7 @@ func findMessageByDate(group string, targetDate int64, searchForFirst bool, ctx 
 		progressbar.OptionSetRenderBlankState(true),
 		progressbar.OptionThrottle(time.Millisecond*100),
 		progressbar.OptionShowElapsedTimeOnFinish(),
+		progressbar.OptionUseANSICodes(conf.Directsearch.UseANSICodes),
 	)
 	defer func() {
 		bar.Finish()

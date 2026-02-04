@@ -92,6 +92,7 @@ type DirectSearch struct {
 	OverviewRetries int    `ini:"overview_retries"`
 	Skip            bool   `ini:"skip"`
 	FirstGroupOnly  bool   `ini:"first_group_only"`
+	UseANSICodes    bool   `ini:"use_ansi_codes"`
 }
 
 // configuration structure
@@ -124,6 +125,7 @@ func loadConfig() {
 			OverviewRetries: 3,
 			Skip:            true,
 			FirstGroupOnly:  false,
+			UseANSICodes:    true,
 		},
 	}
 
