@@ -19,13 +19,13 @@ func initNntpPool() error {
 		for {
 			select {
 			case v := <-nntpPool.LogChan:
-				Log.Info("NNTPPool%v\n", v)
+				Log.Debug("NNTPPool%v", v)
 			case w := <-nntpPool.WarnChan:
 				warning := w.Error()
 				if strings.Contains(warning, "502") {
-					Log.Debug("NNTPPool%v\n", warning)
+					Log.Debug("NNTPPool%v", warning)
 				} else {
-					Log.Warn("NNTPPool%v\n", warning)
+					Log.Warn("NNTPPool%v", warning)
 				}
 			}
 		}
