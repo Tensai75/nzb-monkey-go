@@ -36,7 +36,7 @@ Please also note that the macOS binaries are not signed.
 
 ### Home Assistant App
 
-@dm82m is bundling the NZB Monkey Go binary and has added an web interface wrapper that nicely integrates NZB Monkey Go as an App into Home Assistant. You can check it out here: https://github.com/dm82m/hassio-addons/tree/main/nzb-monkey-go
+There is an Home Assistant App that bundles NZB Monkey Go and adds an web interface that nicely integrates NZB Monkey Go into Home Assistant. You can check it out [here](https://github.com/dm82m/hassio-addons/tree/main/nzb-monkey-go).
 
 ## Contribution
 
