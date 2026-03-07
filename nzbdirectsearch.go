@@ -7,6 +7,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/Tensai75/fslock"
 	"github.com/Tensai75/nntpDirectSearch"
 	"github.com/Tensai75/nzbparser"
 	progressbar "github.com/schollz/progressbar/v3"
@@ -62,6 +63,15 @@ func nzbdirectsearch(engine SearchEngine, name string) error {
 	endDate = args.UnixDate + int64(60*60*conf.Directsearch.ForwardHours)
 	if !args.IsTimestamp {
 		endDate += 60 * 60 * 24
+	}
+
+	// acquire lock if configured to allow only one instance of the direct search
+	if conf.Directsearch.OneInstanceOnly {
+		lock, err := acquireLock()
+		if err != nil {
+			return fmt.Errorf("failed to acquire lock: %v", err)
+		}
+		defer lock.Unlock()
 	}
 
 	// initialize nntp pool
@@ -288,4 +298,22 @@ func measurePeakRates(ticker *time.Ticker, peakMessagesPerSecond *uint64, peakBy
 		lastMessages = currentMessages
 		lastBytes = currentBytes
 	}
+}
+
+func acquireLock() (*fslock.Lock, error) {
+	lockFilePath := fmt.Sprintf("%s/directSearch.lock", tempPath)
+	lock := fslock.New(lockFilePath)
+	err := lock.TryLock()
+	if err == nil {
+		return lock, nil
+	}
+	if !errors.Is(err, fslock.ErrLocked) {
+		return nil, err
+	}
+	Log.Warn("Another instance of the direct search is already running. Waiting for lock to be released...")
+	err = lock.Lock()
+	if err != nil {
+		return nil, err
+	}
+	return lock, nil
 }

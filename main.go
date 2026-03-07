@@ -34,6 +34,7 @@ var (
 	appExec                   string
 	appPath                   string
 	homePath                  string
+	tempPath                  string
 	results                   = make([]Result, 0)
 	filesColor, segmentsColor func(a ...interface{}) string
 	red                       = color.New(color.FgRed).SprintFunc()
@@ -55,6 +56,7 @@ func init() {
 		Log.Error("Unable to determin home path")
 		exit(1)
 	}
+	tempPath = os.TempDir()
 
 	// change working directory
 	// important for url protocol handling (otherwise work dir will be system32 on windows)

@@ -94,6 +94,7 @@ type DirectSearch struct {
 	FirstGroupOnly  bool   `ini:"first_group_only"`
 	UseANSICodes    bool   `ini:"use_ansi_codes"`
 	ShowCounter     bool   `ini:"show_counter"`
+	OneInstanceOnly bool   `ini:"one_instance_only"`
 }
 
 // configuration structure
