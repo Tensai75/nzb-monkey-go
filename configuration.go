@@ -78,22 +78,30 @@ type CategorySettings struct {
 	regex string
 }
 
+type Easynews struct {
+	Username string `ini:"username"`
+	Password string `ini:"password"`
+}
+
 type DirectSearch struct {
-	Host            string `ini:"host"`
-	Port            int    `ini:"port"`
-	SSL             bool   `ini:"ssl"`
-	Username        string `ini:"username"`
-	Password        string `ini:"password"`
-	Connections     int    `ini:"connections"`
-	Hours           int    `ini:"hours"`
-	ForwardHours    int    `ini:"forward_hours"`
-	Step            int    `ini:"step"`
-	OverviewTimeout int    `ini:"overview_timeout"`
-	OverviewRetries int    `ini:"overview_retries"`
-	Skip            bool   `ini:"skip"`
-	FirstGroupOnly  bool   `ini:"first_group_only"`
-	UseANSICodes    bool   `ini:"use_ansi_codes"`
-	ShowCounter     bool   `ini:"show_counter"`
+	Host                       string `ini:"host"`
+	Port                       int    `ini:"port"`
+	SSL                        bool   `ini:"ssl"`
+	Username                   string `ini:"username"`
+	Password                   string `ini:"password"`
+	Connections                int    `ini:"connections"`
+	Hours                      int    `ini:"hours"`
+	ForwardHours               int    `ini:"forward_hours"`
+	Step                       int    `ini:"step"`
+	OverviewTimeout            int    `ini:"overview_timeout"`
+	OverviewRetries            int    `ini:"overview_retries"`
+	Skip                       bool   `ini:"skip"`
+	FirstGroupOnly             bool   `ini:"first_group_only"`
+	UseANSICodes               bool   `ini:"use_ansi_codes"`
+	ShowCounter                bool   `ini:"show_counter"`
+	OneInstanceOnly            bool   `ini:"one_instance_only"`
+	BoundariesScannerStep      int    `ini:"boundaries_scanner_step"`
+	BoundariesScannerTolerance int    `ini:"boundaries_scanner_tolerance"`
 }
 
 // configuration structure
@@ -106,6 +114,7 @@ type Configuration struct {
 	Nzbcheck      NZBcheck           `ini:"NZBCheck"`
 	Categories    []CategorySettings `ini:"-"` // will hold the categories regex patterns
 	Searchengines []string           `ini:"-"` // will hold the search engines
+	Easynews      Easynews           `ini:"EASYNEWS"`
 	Directsearch  DirectSearch       `ini:"DIRECTSEARCH"`
 }
 
@@ -118,16 +127,19 @@ func loadConfig() {
 
 	conf = Configuration{
 		Directsearch: DirectSearch{
-			Connections:     20,
-			Hours:           12,
-			ForwardHours:    12,
-			Step:            20000,
-			OverviewTimeout: 5,
-			OverviewRetries: 3,
-			Skip:            true,
-			FirstGroupOnly:  false,
-			UseANSICodes:    true,
-			ShowCounter:     true,
+			Connections:                20,
+			Hours:                      12,
+			ForwardHours:               12,
+			Step:                       20000,
+			OverviewTimeout:            5,
+			OverviewRetries:            3,
+			Skip:                       true,
+			FirstGroupOnly:             false,
+			UseANSICodes:               true,
+			ShowCounter:                true,
+			OneInstanceOnly:            true, // Default must stay aligned with the generated config's one_instance_only value.
+			BoundariesScannerStep:      500,
+			BoundariesScannerTolerance: 30,
 		},
 	}
 

@@ -122,8 +122,17 @@ nzbindex =  1
 nzbking =  2
 # Enable Binsearch
 binsearch =  3
+# Enable Easynews Search (settings for the Easynews search required)
+easynews = 4
 # Enable nzb direct search (settings for the nzb direct search required)
-directsearch = 4
+directsearch = 5
+
+# Settings for the Easynews search
+[EASYNEWS]
+# Your Easynews username
+username = ""
+# Your Easynews password
+password = ""
 
 # Settings for the nzb direct search
 [DIRECTSEARCH]
@@ -158,5 +167,8 @@ first_group_only = false
 use_ansi_codes = true
 # Show counter for progress bar
 show_counter = true
+# Only allow one instance of the direct search to run at the same time
+# (prevents too many connection errors if more than one search is started at the same time)
+one_instance_only = true
 `, "\n")
 }
