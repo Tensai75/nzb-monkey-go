@@ -37,7 +37,7 @@ func easynewsSearch(engine SearchEngine, name string) error {
 	if err != nil {
 		return fmt.Errorf("Error calling search URL: %s", err)
 	}
-	results, err := checkresponse(body)
+	results, err := checkResponse(body)
 	if err != nil {
 		return fmt.Errorf("Error checking search response: %s", err)
 	}
@@ -62,7 +62,7 @@ func easynewsSearch(engine SearchEngine, name string) error {
 	return nil
 }
 
-func checkresponse(response []byte) ([]easynewsResult, error) {
+func checkResponse(response []byte) ([]easynewsResult, error) {
 	var responseJSON easynewsSearchResponse
 
 	if err := json.Unmarshal(response, &responseJSON); err != nil {
