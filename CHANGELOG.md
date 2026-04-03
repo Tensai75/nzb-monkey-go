@@ -1,5 +1,18 @@
 ## Change log
 
+### v0.3.0
+
+#### New features
+
+- directsearch logic moved to a separate package for better modularity and maintainability with the following changes:
+  - switch to parallel boundary scan for improved performance in finding first and last message numbers
+  - highly improved scanner robustness and boundary date detection using average dates over a range of messages instead of relying on single messages
+  - rate measurement and logging for directsearch operations
+- new option to limit directsearch to one instance at a time to avoid potential too many connections errors
+- new option to make the progress bar counter optional
+- reduced line size and switch to ANSI codes for progress bar display for better visual appearance with optional deactivation
+- Easynews added as a new search engine option (requires an Easynews account to work)
+
 #### v0.2.1
 
 - fix: fix for nil pointer panic during first and last message search
