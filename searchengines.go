@@ -64,6 +64,12 @@ var searchEngines = SearchEngines{
 		groupNo:     1,
 		search:      htmlSearch,
 	},
+	"easynews": SearchEngine{
+		name:        "Easynews Search",
+		searchURL:   "https://members.easynews.com/2.0/search/solr-search/?sbj=%s",
+		downloadURL: "https://members.easynews.com/2.0/api/dl-nzb",
+		search:      easynewsSearch,
+	},
 	"directsearch": SearchEngine{
 		name:   "NZB direct search",
 		search: nzbdirectsearch,

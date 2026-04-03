@@ -78,6 +78,11 @@ type CategorySettings struct {
 	regex string
 }
 
+type Easynews struct {
+	Username string `ini:"username"`
+	Password string `ini:"password"`
+}
+
 type DirectSearch struct {
 	Host                       string `ini:"host"`
 	Port                       int    `ini:"port"`
@@ -109,6 +114,7 @@ type Configuration struct {
 	Nzbcheck      NZBcheck           `ini:"NZBCheck"`
 	Categories    []CategorySettings `ini:"-"` // will hold the categories regex patterns
 	Searchengines []string           `ini:"-"` // will hold the search engines
+	Easynews      Easynews           `ini:"EASYNEWS"`
 	Directsearch  DirectSearch       `ini:"DIRECTSEARCH"`
 }
 
