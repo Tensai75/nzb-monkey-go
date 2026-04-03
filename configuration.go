@@ -137,7 +137,7 @@ func loadConfig() {
 			FirstGroupOnly:             false,
 			UseANSICodes:               true,
 			ShowCounter:                true,
-			OneInstanceOnly:            false,
+			OneInstanceOnly:            true, // Default must stay aligned with the generated config's one_instance_only value.
 			BoundariesScannerStep:      500,
 			BoundariesScannerTolerance: 30,
 		},
