@@ -57,6 +57,12 @@ func nzbdirectsearch(engine SearchEngine, name string) error {
 	if conf.Directsearch.OverviewRetries == 0 {
 		conf.Directsearch.OverviewRetries = 3
 	}
+	if conf.Directsearch.BoundariesScannerStep == 0 {
+		conf.Directsearch.BoundariesScannerStep = 500
+	}
+	if conf.Directsearch.BoundariesScannerTolerance == 0 {
+		conf.Directsearch.BoundariesScannerTolerance = 30
+	}
 
 	// set start and end date for search
 	startDate = args.UnixDate - int64(conf.Directsearch.Hours*60*60)
@@ -89,10 +95,12 @@ func nzbdirectsearch(engine SearchEngine, name string) error {
 		return err
 	}
 	directSearchConfig := nntpDirectSearch.DirectSearchConfig{
-		Connections:     uint(conf.Directsearch.Connections),
-		Step:            uint(conf.Directsearch.Step),
-		OverviewRetries: uint(conf.Directsearch.OverviewRetries),
-		OverviewTimeout: uint(conf.Directsearch.OverviewTimeout),
+		Connections:                uint(conf.Directsearch.Connections),
+		Step:                       uint(conf.Directsearch.Step),
+		OverviewRetries:            uint(conf.Directsearch.OverviewRetries),
+		OverviewTimeout:            uint(conf.Directsearch.OverviewTimeout),
+		BoundariesScannerStep:      uint(conf.Directsearch.BoundariesScannerStep),
+		BoundariesScannerTolerance: uint(conf.Directsearch.BoundariesScannerTolerance),
 	}
 	err := directSearch.SetConfig(directSearchConfig)
 	if err != nil {
@@ -156,8 +164,8 @@ func searchInGroup(group string) ([]*nzbparser.Nzb, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to scan for first and last message: %v", err)
 	}
-	Log.Info("Found first message ID: %s - Date: %s", FormatNumberWithApostrophe(boundaries.FirstMessage.MessageID), boundaries.FirstMessage.Date.Local().Format("02.01.2006 15:04:05 MST"))
-	Log.Info("Found last message ID:  %s - Date: %s", FormatNumberWithApostrophe(boundaries.LastMessage.MessageID), boundaries.LastMessage.Date.Local().Format("02.01.2006 15:04:05 MST"))
+	Log.Info("First message ID set to: %s - Average date: %s", FormatNumberWithApostrophe(boundaries.FirstMessage.MessageID), boundaries.FirstMessage.Date.Local().Format("02.01.2006 15:04 MST"))
+	Log.Info("Last message ID set to:  %s - Average date: %s", FormatNumberWithApostrophe(boundaries.LastMessage.MessageID), boundaries.LastMessage.Date.Local().Format("02.01.2006 15:04 MST"))
 
 	// start peak rate measurement
 	Log.Debug("Starting peak rate measurement.")
