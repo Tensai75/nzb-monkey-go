@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/Tensai75/fslock"
@@ -113,7 +115,10 @@ func nzbdirectsearch(engine SearchEngine, name string) error {
 			select {
 			case <-directSearchCtx.Done():
 				return
-			case debugLog := <-directSearch.Log:
+			case debugLog, ok := <-directSearch.Log:
+				if !ok {
+					return
+				}
 				Log.Debug("NNTPDirectSearch: %s", debugLog)
 			}
 		}
@@ -174,18 +179,28 @@ func searchInGroup(group string) ([]*nzbparser.Nzb, error) {
 	Log.Debug("Total search range: %s messages", FormatNumberWithApostrophe(totalSearchRange))
 	peakMessagesPerSecond := uint64(0)
 	peakBytesPerSecond := uint64(0)
-	go measurePeakRates(ticker, &peakMessagesPerSecond, &peakBytesPerSecond)
+	peakRatesCtx, stopPeakRates := context.WithCancel(context.Background())
+	var peakRatesWg sync.WaitGroup
+	var stopPeakRateMeasurement = func() {
+		ticker.Stop()
+		stopPeakRates()
+		peakRatesWg.Wait()
+	}
+	peakRatesWg.Go(func() {
+		measurePeakRates(peakRatesCtx, ticker, &peakMessagesPerSecond, &peakBytesPerSecond)
+	})
 
 	// scan messages for header
 	Log.Info("Scanning messages %v to %v (%v messages in total)", FormatNumberWithApostrophe(boundaries.FirstMessage.MessageID), FormatNumberWithApostrophe(boundaries.LastMessage.MessageID), FormatNumberWithApostrophe(totalSearchRange))
 	startTime := time.Now()
 	nzbFiles, err := scanForHeader(boundaries)
 	if err != nil {
+		stopPeakRateMeasurement()
 		return nil, fmt.Errorf("failed to scan messages: %v", err)
 	}
 
-	// display rates
-	ticker.Stop()
+	// stop peak rate measurement and display rates
+	stopPeakRateMeasurement()
 	// calculate duration
 	duration := time.Since(startTime)
 	formattedDuration := fmt.Sprintf("%02dm %02ds %03dms", int(duration/time.Minute), int((duration%time.Minute)/time.Second), int((duration%time.Second)/time.Millisecond))
@@ -283,33 +298,38 @@ func scanForHeader(boundaries nntpDirectSearch.BoundariesScannerResult) ([]*nzbp
 	return nzbFiles, nil
 }
 
-func measurePeakRates(ticker *time.Ticker, peakMessagesPerSecond *uint64, peakBytesPerSecond *uint64) {
+func measurePeakRates(ctx context.Context, ticker *time.Ticker, peakMessagesPerSecond *uint64, peakBytesPerSecond *uint64) {
 	var lastMessages uint64
 	var lastBytes uint64
-	for range ticker.C {
-		currentMessages := directSearch.GetLinesRead()
-		currentBytes := directSearch.GetBytesRead()
-		messagesThisSecond := currentMessages - lastMessages
-		bytesThisSecond := currentBytes - lastBytes
-		if messagesThisSecond > *peakMessagesPerSecond {
-			*peakMessagesPerSecond = messagesThisSecond
-			if totalPeakMessagesPerSecond < *peakMessagesPerSecond {
-				totalPeakMessagesPerSecond = *peakMessagesPerSecond
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			currentMessages := directSearch.GetLinesRead()
+			currentBytes := directSearch.GetBytesRead()
+			messagesThisSecond := currentMessages - lastMessages
+			bytesThisSecond := currentBytes - lastBytes
+			if messagesThisSecond > *peakMessagesPerSecond {
+				*peakMessagesPerSecond = messagesThisSecond
+				if totalPeakMessagesPerSecond < *peakMessagesPerSecond {
+					totalPeakMessagesPerSecond = *peakMessagesPerSecond
+				}
 			}
-		}
-		if bytesThisSecond > *peakBytesPerSecond {
-			*peakBytesPerSecond = bytesThisSecond
-			if totalPeakBytesPerSecond < *peakBytesPerSecond {
-				totalPeakBytesPerSecond = *peakBytesPerSecond
+			if bytesThisSecond > *peakBytesPerSecond {
+				*peakBytesPerSecond = bytesThisSecond
+				if totalPeakBytesPerSecond < *peakBytesPerSecond {
+					totalPeakBytesPerSecond = *peakBytesPerSecond
+				}
 			}
+			lastMessages = currentMessages
+			lastBytes = currentBytes
 		}
-		lastMessages = currentMessages
-		lastBytes = currentBytes
 	}
 }
 
 func acquireLock() (*fslock.Lock, error) {
-	lockFilePath := fmt.Sprintf("%s/directSearch.lock", tempPath)
+	lockFilePath := filepath.Join(tempPath, "directSearch.lock")
 	lock := fslock.New(lockFilePath)
 	err := lock.TryLock()
 	if err == nil {
