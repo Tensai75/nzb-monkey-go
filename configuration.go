@@ -214,7 +214,7 @@ func loadConfig() {
 	}
 
 	// check target parameter
-	for _, target := range strings.Split(conf.General.Target, ",") {
+	for target := range strings.SplitSeq(conf.General.Target, ",") {
 		target = strings.TrimSpace(target)
 		if _, ok := targets[target]; ok {
 			conf.General.Targets = append(conf.General.Targets, target)
