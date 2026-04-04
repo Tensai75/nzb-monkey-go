@@ -1,5 +1,11 @@
 ## Change log
 
+#### v0.3.1
+
+- fix: update easynews search url to get more than 100 results (unfortunately, API is limited by easynews to 1000 results)
+- refactor: consolidate HTTP helpers into http.go with improved error handling for search engines
+- fix: minor fixes
+
 ### v0.3.0
 
 #### New features

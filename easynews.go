@@ -5,9 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
 	"mime/multipart"
-	"net/http"
 	"net/url"
 	"strings"
 
@@ -35,28 +33,28 @@ func easynewsSearch(engine SearchEngine, name string) error {
 	}
 	body, err := loadURLWithHeaders(searchURL, headers)
 	if err != nil {
-		return fmt.Errorf("Error calling search URL: %s", err)
+		return fmt.Errorf("error calling search URL: %s", err.Error())
 	}
 	results, err := checkResponse(body)
 	if err != nil {
-		return fmt.Errorf("Error checking search response: %s", err)
+		return fmt.Errorf("error checking search response: %s", err.Error())
 	}
 	formData, contentType, err := makeDownloadFormData(results)
 	if err != nil {
-		return fmt.Errorf("Error creating download form data: %s", err)
+		return fmt.Errorf("error creating download form data: %s", err.Error())
 	}
 	downloadURL := engine.downloadURL
 	response, err := postURLWithHeaders(downloadURL, formData, contentType, headers)
 	if err != nil {
-		return fmt.Errorf("Error calling download URL: %s", err)
+		return fmt.Errorf("error calling download URL: %s", err.Error())
 	}
 	if nzb, err := nzbparser.ParseString(string(response)); err != nil {
-		return fmt.Errorf("Error parsing NZB file: %s", err)
+		return fmt.Errorf("error parsing NZB file: %s", err.Error())
 	} else {
 		if nzb.Files.Len() > 0 {
 			processResult(nzb, name)
 		} else {
-			return fmt.Errorf("The returned NZB file is empty")
+			return fmt.Errorf("the returned NZB file is empty")
 		}
 	}
 	return nil
@@ -66,6 +64,8 @@ func checkResponse(response []byte) ([]easynewsResult, error) {
 	var responseJSON easynewsSearchResponse
 
 	if err := json.Unmarshal(response, &responseJSON); err != nil {
+		Log.Debug("JSON parse error: %s", err.Error())
+		Log.Debug("Response body: %s", response)
 		return nil, fmt.Errorf("not a valid JSON response")
 	}
 
@@ -135,44 +135,4 @@ func encodeFileName(baseName, extension string) string {
 	encodedBaseName := strings.TrimRight(base64.StdEncoding.EncodeToString([]byte(baseName)), "=")
 	encodedExtension := strings.TrimRight(base64.StdEncoding.EncodeToString([]byte(extension)), "=")
 	return encodedBaseName + ":" + encodedExtension
-}
-
-func loadURLWithHeaders(rawURL string, headers map[string]string) ([]byte, error) {
-	return doRequestWithHeaders(http.MethodGet, rawURL, nil, "", headers)
-}
-
-func postURLWithHeaders(rawURL string, body io.Reader, contentType string, headers map[string]string) ([]byte, error) {
-	return doRequestWithHeaders(http.MethodPost, rawURL, body, contentType, headers)
-}
-
-func doRequestWithHeaders(method string, rawURL string, body io.Reader, contentType string, headers map[string]string) ([]byte, error) {
-	req, err := http.NewRequest(method, rawURL, body)
-	if err != nil {
-		return nil, err
-	}
-
-	for key, value := range headers {
-		req.Header.Set(key, value)
-	}
-
-	if contentType != "" {
-		req.Header.Set("Content-Type", contentType)
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	responseBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("%s", resp.Status)
-	}
-
-	return responseBody, nil
 }

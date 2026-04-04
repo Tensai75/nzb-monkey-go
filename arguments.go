@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"html"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -161,6 +162,9 @@ func checkArguments() {
 	for i, group := range args.Groups {
 		args.Groups[i] = strings.Replace(group, "a.b.", "alt.binaries.", 1)
 	}
+
+	// unescape title
+	args.Title = html.UnescapeString(args.Title)
 
 }
 

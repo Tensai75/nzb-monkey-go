@@ -3,8 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -66,7 +64,7 @@ var searchEngines = SearchEngines{
 	},
 	"easynews": SearchEngine{
 		name:        "Easynews Search",
-		searchURL:   "https://members.easynews.com/2.0/search/solr-search/?sbj=%s",
+		searchURL:   "https://members.easynews.com/2.0/search/solr-search/?fly=2&YEAAAAAAAAAAAAH=NO&gps=%s&pby=1000&pno=1&s1=nsubject&s1d=%2B&s2=nrfile&s2d=%2B&s3=dsize&s3d=%2B&sS=0&d1t=&d2t=&b1t=&b2t=&px1t=&px2t=&fps1t=&fps2t=&bps1t=&bps2t=&hz1t=&hz2t=&rn1t=&rn2t=&grpF[]=&st=adv&safeO=0&sb=1",
 		downloadURL: "https://members.easynews.com/2.0/api/dl-nzb",
 		search:      easynewsSearch,
 	},
@@ -95,28 +93,34 @@ func htmlSearch(engine SearchEngine, name string) error {
 	var searchRegexp *regexp.Regexp
 	var match []string
 	searchString := engine.cleanSearchString(args.Header)
-	if body, err = loadURL(fmt.Sprintf(engine.searchURL, url.QueryEscape(searchString))); err == nil {
-		if searchRegexp, err = regexp.Compile(engine.regexString); err == nil {
-			if match = searchRegexp.FindStringSubmatch(body); match != nil {
-				if len(match) >= engine.groupNo+1 {
-					if body, err = loadURL(fmt.Sprintf(engine.downloadURL, match[engine.groupNo])); err == nil {
-						if nzb, err := nzbparser.ParseString(body); err != nil {
-							return err
-						} else {
-							if nzb.Files.Len() > 0 {
-								processResult(nzb, name)
-							} else {
-								return fmt.Errorf("The returned NZB file is empty")
-							}
-						}
-					}
-				}
-			} else {
-				return fmt.Errorf("No results found")
-			}
-		}
+	body, err = loadURL(fmt.Sprintf(engine.searchURL, url.QueryEscape(searchString)))
+	if err != nil {
+		return fmt.Errorf("error calling search URL: %s", err.Error())
 	}
-	return err
+	searchRegexp, err = regexp.Compile(engine.regexString)
+	if err != nil {
+		return fmt.Errorf("error compiling regex: %s", err.Error())
+	}
+	match = searchRegexp.FindStringSubmatch(body)
+	if match == nil {
+		return fmt.Errorf("no results found")
+	}
+	if len(match) < engine.groupNo+1 {
+		return fmt.Errorf("invalid regex group number")
+	}
+	body, err = loadURL(fmt.Sprintf(engine.downloadURL, match[engine.groupNo]))
+	if err != nil {
+		return fmt.Errorf("error calling download URL: %s", err.Error())
+	}
+	nzb, err := nzbparser.ParseString(body)
+	if err != nil {
+		return fmt.Errorf("error parsing NZB file: %s", err.Error())
+	}
+	if nzb.Files.Len() == 0 {
+		return fmt.Errorf("the returned NZB file is empty")
+	}
+	processResult(nzb, name)
+	return nil
 }
 
 // default search function for json response
@@ -126,61 +130,49 @@ func jsonSearch(engine SearchEngine, name string) error {
 	var result interface{}
 	var value string
 	searchString := engine.cleanSearchString(args.Header)
-	if body, err = loadURL(fmt.Sprintf(engine.searchURL, url.QueryEscape(searchString))); err == nil {
-		if err = json.Unmarshal([]byte(body), &result); err == nil {
-			for _, value := range strings.Split(engine.jsonPath, ".") {
-				if number, err := strconv.Atoi(value); err == nil {
-					if len(result.([]interface{})) > number && result.([]interface{})[number] != nil {
-						result = result.([]interface{})[number]
-					} else {
-						return fmt.Errorf("No results found")
-					}
-				} else {
-					if _, ok := result.(map[string]interface{})[value]; ok && result.(map[string]interface{})[value] != nil {
-						result = result.(map[string]interface{})[value]
-					} else {
-						return fmt.Errorf("No results found")
-					}
-				}
-			}
-			if fmt.Sprintf("%T", result) == "float64" {
-				value = fmt.Sprintf("%d", int(result.(float64)))
-			} else if fmt.Sprintf("%T", result) == "string" {
-				value = result.(string)
+	body, err = loadURL(fmt.Sprintf(engine.searchURL, url.QueryEscape(searchString)))
+	if err != nil {
+		return fmt.Errorf("error calling search URL: %s", err.Error())
+	}
+	err = json.Unmarshal([]byte(body), &result)
+	if err != nil {
+		Log.Debug("JSON parse error: %s", err.Error())
+		Log.Debug("Response body: %s", body)
+		return fmt.Errorf("not a valid JSON response")
+	}
+	for value := range strings.SplitSeq(engine.jsonPath, ".") {
+		if number, err := strconv.Atoi(value); err == nil {
+			if len(result.([]any)) > number && result.([]any)[number] != nil {
+				result = result.([]any)[number]
 			} else {
-				return fmt.Errorf("No results found")
-			}
-			if body, err = loadURL(fmt.Sprintf(engine.downloadURL, value)); err == nil {
-				if nzb, err := nzbparser.ParseString(body); err != nil {
-					return err
-				} else {
-					if nzb.Files.Len() > 0 {
-						processResult(nzb, name)
-					} else {
-						return fmt.Errorf("The returned NZB file is empty")
-					}
-				}
-			} else {
-				return err
+				return fmt.Errorf("no results found")
 			}
 		} else {
-			return err
+			if _, ok := result.(map[string]any)[value]; ok && result.(map[string]any)[value] != nil {
+				result = result.(map[string]any)[value]
+			} else {
+				return fmt.Errorf("no results found")
+			}
 		}
-	} else {
-		return err
 	}
+	if fmt.Sprintf("%T", result) == "float64" {
+		value = fmt.Sprintf("%d", int(result.(float64)))
+	} else if fmt.Sprintf("%T", result) == "string" {
+		value = result.(string)
+	} else {
+		return fmt.Errorf("no results found")
+	}
+	body, err = loadURL(fmt.Sprintf(engine.downloadURL, value))
+	if err != nil {
+		return fmt.Errorf("error calling download URL: %s", err.Error())
+	}
+	nzb, err := nzbparser.ParseString(body)
+	if err != nil {
+		return fmt.Errorf("error parsing NZB file: %s", err.Error())
+	}
+	if nzb.Files.Len() == 0 {
+		return fmt.Errorf("the returned NZB file is empty")
+	}
+	processResult(nzb, name)
 	return nil
-}
-
-func loadURL(url string) (string, error) {
-	if resp, err := http.Get(url); err != nil {
-		return "", err
-	} else {
-		defer resp.Body.Close()
-		if body, err := io.ReadAll(resp.Body); err != nil {
-			return "", err
-		} else {
-			return string(body), nil
-		}
-	}
 }

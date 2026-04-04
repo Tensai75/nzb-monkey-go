@@ -117,11 +117,11 @@ best_nzb = true
 # 0 = disabled; 1-9 = enabled; 1-9 are also the order in which the search engines are used
 # More than 1 server with the same order number is allowed
 # Enable NZBIndex
-nzbindex =  1
+nzbindex = 1
 # Enable NZBKing
-nzbking =  2
+nzbking = 2
 # Enable Binsearch
-binsearch =  3
+binsearch = 3
 # Enable Easynews Search (settings for the Easynews search required)
 easynews = 4
 # Enable nzb direct search (settings for the nzb direct search required)
