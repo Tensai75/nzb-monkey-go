@@ -51,12 +51,12 @@ func execute_push(nzb string, category string) error {
 				fmt.Println()
 				Log.Info("Creating path '%s' ...", path)
 				if err := os.MkdirAll(path, os.ModePerm); err != nil {
-					return fmt.Errorf("Unable to save NZB file. Error creating path '%s': %s", path, err.Error())
+					return fmt.Errorf("unable to save NZB file: error creating path '%s': %s", path, err.Error())
 				}
 				break
 
 			} else if str == "N" {
-				return fmt.Errorf("Unable to save NZB file, path '%s' does not exist", path)
+				return fmt.Errorf("unable to save NZB file: path '%s' does not exist", path)
 			}
 		}
 	}

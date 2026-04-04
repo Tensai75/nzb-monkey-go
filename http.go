@@ -61,7 +61,7 @@ func doRequest(client *http.Client, method string, rawURL string, body io.Reader
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("error calling %s:\nstatus: %s\nresponse: %s", rawURL, resp.Status, responseBody)
+		return nil, fmt.Errorf("%s", resp.Status)
 	}
 
 	return responseBody, nil
@@ -70,7 +70,7 @@ func doRequest(client *http.Client, method string, rawURL string, body io.Reader
 // request builds and executes an HTTP request for a target, constructing the URL from the
 // provided config struct (accessed via reflection) and applying optional headers, query
 // parameters, body, and content type.
-func request(conf interface{}, httpMethod string, path string, headers map[string]string, queryParameters url.Values, body io.Reader, contentType string) ([]byte, error) {
+func request(conf any, httpMethod string, path string, headers map[string]string, queryParameters url.Values, body io.Reader, contentType string) ([]byte, error) {
 
 	values := reflect.ValueOf(conf)
 	transportCfg := http.DefaultTransport.(*http.Transport).Clone()
