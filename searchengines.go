@@ -3,8 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -170,17 +168,4 @@ func jsonSearch(engine SearchEngine, name string) error {
 		return err
 	}
 	return nil
-}
-
-func loadURL(url string) (string, error) {
-	if resp, err := http.Get(url); err != nil {
-		return "", err
-	} else {
-		defer resp.Body.Close()
-		if body, err := io.ReadAll(resp.Body); err != nil {
-			return "", err
-		} else {
-			return string(body), nil
-		}
-	}
 }

@@ -40,6 +40,7 @@ type SABnzbd struct {
 	Category          string `ini:"category"`
 	Addpaused         bool   `ini:"addpaused"`
 	Compression       string `ini:"compression"`
+	Timeout           int    `ini:"timeout"`
 }
 
 type NZBGet struct {
@@ -52,6 +53,7 @@ type NZBGet struct {
 	Basepath          string `ini:"basepath"`
 	Category          string `ini:"category"`
 	Addpaused         bool   `ini:"addpaused"`
+	Timeout           int    `ini:"timeout"`
 }
 
 type SynologyDS struct {
@@ -64,6 +66,7 @@ type SynologyDS struct {
 	BasicauthUsername string
 	BasicauthPassword string
 	Basepath          string `ini:"basepath"`
+	Timeout           int    `ini:"timeout"`
 }
 
 type NZBcheck struct {

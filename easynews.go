@@ -5,9 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
 	"mime/multipart"
-	"net/http"
 	"net/url"
 	"strings"
 
@@ -135,44 +133,4 @@ func encodeFileName(baseName, extension string) string {
 	encodedBaseName := strings.TrimRight(base64.StdEncoding.EncodeToString([]byte(baseName)), "=")
 	encodedExtension := strings.TrimRight(base64.StdEncoding.EncodeToString([]byte(extension)), "=")
 	return encodedBaseName + ":" + encodedExtension
-}
-
-func loadURLWithHeaders(rawURL string, headers map[string]string) ([]byte, error) {
-	return doRequestWithHeaders(http.MethodGet, rawURL, nil, "", headers)
-}
-
-func postURLWithHeaders(rawURL string, body io.Reader, contentType string, headers map[string]string) ([]byte, error) {
-	return doRequestWithHeaders(http.MethodPost, rawURL, body, contentType, headers)
-}
-
-func doRequestWithHeaders(method string, rawURL string, body io.Reader, contentType string, headers map[string]string) ([]byte, error) {
-	req, err := http.NewRequest(method, rawURL, body)
-	if err != nil {
-		return nil, err
-	}
-
-	for key, value := range headers {
-		req.Header.Set(key, value)
-	}
-
-	if contentType != "" {
-		req.Header.Set("Content-Type", contentType)
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	responseBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("%s", resp.Status)
-	}
-
-	return responseBody, nil
 }
