@@ -28,6 +28,11 @@ type easynewsResult struct {
 func easynewsSearch(engine SearchEngine, name string) error {
 	searchString := engine.cleanSearchString(args.Header)
 	searchURL := engine.searchURL
+	dateOrder := "-"
+	if conf.Easynews.OldestResult {
+		dateOrder = "%2B"
+	}
+	searchURL += fmt.Sprintf("&s1=dtime&s1d=%s&s2=nsubject&s2d=%%2B&s3=nrfile&s3d=%%2B", dateOrder)
 	if conf.Easynews.SubjectSearchOnly {
 		searchURL += "&sbj=" + url.QueryEscape(searchString)
 	} else {
