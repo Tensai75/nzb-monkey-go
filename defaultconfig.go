@@ -133,6 +133,9 @@ directsearch = 5
 username = ""
 # Your Easynews password
 password = ""
+# Only search in subject instead of using keyword search
+# (may be more accurate in some cases but will not find "obfuscated" uploads)
+subject_search_only = false
 
 # Settings for the nzb direct search
 [DIRECTSEARCH]

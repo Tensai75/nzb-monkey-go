@@ -21,13 +21,19 @@ type easynewsResult struct {
 	Poster    string `json:"7"`
 	FileName  string `json:"10"`
 	Extension string `json:"11"`
+	SetID     string `json:"19"`
 	Sig       string `json:"sig"`
 }
 
 func easynewsSearch(engine SearchEngine, name string) error {
 	searchString := engine.cleanSearchString(args.Header)
-	searchURL := fmt.Sprintf(engine.searchURL, url.QueryEscape(searchString))
-	auth := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", conf.Easynews.Username, conf.Easynews.Password)))
+	searchURL := engine.searchURL
+	if conf.Easynews.SubjectSearchOnly {
+		searchURL += "&sbj=" + url.QueryEscape(searchString)
+	} else {
+		searchURL += "&gps=" + url.QueryEscape(searchString)
+	}
+	auth := base64.StdEncoding.EncodeToString(fmt.Appendf(nil, "%s:%s", conf.Easynews.Username, conf.Easynews.Password))
 	headers := map[string]string{
 		"Authorization": "Basic " + auth,
 	}
