@@ -83,12 +83,10 @@ func checkResponse(response []byte) ([]easynewsResult, error) {
 	var groupedResults []easynewsResult
 
 	for _, item := range responseJSON.Data {
-		basefilename, ok := easynewsBaseFilename(item.FileName)
-		if !ok {
+		if item.SetID == "" {
 			continue
 		}
-
-		groupKey := basefilename + "\x00" + item.Poster
+		groupKey := item.SetID
 		if firstGroupKey == "" {
 			firstGroupKey = groupKey
 		}
@@ -102,17 +100,6 @@ func checkResponse(response []byte) ([]easynewsResult, error) {
 	}
 
 	return nil, fmt.Errorf("no results")
-}
-
-func easynewsBaseFilename(fileName string) (string, bool) {
-	basefilename, _, found := strings.Cut(fileName, ".")
-	if !found {
-		basefilename = fileName
-	}
-	if basefilename == "" {
-		return "", false
-	}
-	return basefilename, true
 }
 
 func makeDownloadFormData(results []easynewsResult) (*bytes.Buffer, string, error) {
