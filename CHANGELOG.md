@@ -1,5 +1,11 @@
 ## Change log
 
+#### v0.3.2
+
+- easynews: new option to use subject search instead of keyword search (may be more accurate but does not find obfuscated uploads)
+- easynews: change result sort order to newest (instead of alphabetically) and new option to sort by oldest (instead of newest)
+- easynews: group results by Easynews' setID instead of using a custom grouping routine
+
 #### v0.3.1
 
 - fix: update easynews search url to get more than 100 results (unfortunately, API is limited by easynews to 1000 results)
