@@ -82,8 +82,10 @@ type CategorySettings struct {
 }
 
 type Easynews struct {
-	Username string `ini:"username"`
-	Password string `ini:"password"`
+	Username          string `ini:"username"`
+	Password          string `ini:"password"`
+	SubjectSearchOnly bool   `ini:"subject_search_only"`
+	OldestResult      bool   `ini:"oldest_result"`
 }
 
 type DirectSearch struct {

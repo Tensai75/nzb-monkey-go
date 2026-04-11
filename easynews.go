@@ -21,13 +21,24 @@ type easynewsResult struct {
 	Poster    string `json:"7"`
 	FileName  string `json:"10"`
 	Extension string `json:"11"`
+	SetID     string `json:"19"`
 	Sig       string `json:"sig"`
 }
 
 func easynewsSearch(engine SearchEngine, name string) error {
 	searchString := engine.cleanSearchString(args.Header)
-	searchURL := fmt.Sprintf(engine.searchURL, url.QueryEscape(searchString))
-	auth := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", conf.Easynews.Username, conf.Easynews.Password)))
+	searchURL := engine.searchURL
+	dateOrder := "-"
+	if conf.Easynews.OldestResult {
+		dateOrder = "%2B"
+	}
+	searchURL += fmt.Sprintf("&s1=dtime&s1d=%s&s2=nsubject&s2d=%%2B&s3=nrfile&s3d=%%2B", dateOrder)
+	if conf.Easynews.SubjectSearchOnly {
+		searchURL += "&sbj=" + url.QueryEscape(searchString)
+	} else {
+		searchURL += "&gps=" + url.QueryEscape(searchString)
+	}
+	auth := base64.StdEncoding.EncodeToString(fmt.Appendf(nil, "%s:%s", conf.Easynews.Username, conf.Easynews.Password))
 	headers := map[string]string{
 		"Authorization": "Basic " + auth,
 	}
@@ -77,12 +88,10 @@ func checkResponse(response []byte) ([]easynewsResult, error) {
 	var groupedResults []easynewsResult
 
 	for _, item := range responseJSON.Data {
-		basefilename, ok := easynewsBaseFilename(item.FileName)
-		if !ok {
+		if item.SetID == "" {
 			continue
 		}
-
-		groupKey := basefilename + "\x00" + item.Poster
+		groupKey := item.SetID
 		if firstGroupKey == "" {
 			firstGroupKey = groupKey
 		}
@@ -96,17 +105,6 @@ func checkResponse(response []byte) ([]easynewsResult, error) {
 	}
 
 	return nil, fmt.Errorf("no results")
-}
-
-func easynewsBaseFilename(fileName string) (string, bool) {
-	basefilename, _, found := strings.Cut(fileName, ".")
-	if !found {
-		basefilename = fileName
-	}
-	if basefilename == "" {
-		return "", false
-	}
-	return basefilename, true
 }
 
 func makeDownloadFormData(results []easynewsResult) (*bytes.Buffer, string, error) {

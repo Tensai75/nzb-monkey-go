@@ -63,8 +63,9 @@ var searchEngines = SearchEngines{
 		search:      htmlSearch,
 	},
 	"easynews": SearchEngine{
-		name:        "Easynews Search",
-		searchURL:   "https://members.easynews.com/2.0/search/solr-search/?fly=2&YEAAAAAAAAAAAAH=NO&gps=%s&pby=1000&pno=1&s1=nsubject&s1d=%2B&s2=nrfile&s2d=%2B&s3=dsize&s3d=%2B&sS=0&d1t=&d2t=&b1t=&b2t=&px1t=&px2t=&fps1t=&fps2t=&bps1t=&bps2t=&hz1t=&hz2t=&rn1t=&rn2t=&grpF[]=&st=adv&safeO=0&sb=1",
+		name: "Easynews Search",
+		// the search URL does not contain a placeholder for the search string because it is added later depending on the search type (subject or keyword search)
+		searchURL:   "https://members.easynews.com/2.0/search/solr-search/?fly=2&YEAAAAAAAAAAAAH=NO&pby=1000&pno=1&sS=0&st=adv&safeO=0&sb=1",
 		downloadURL: "https://members.easynews.com/2.0/api/dl-nzb",
 		search:      easynewsSearch,
 	},
