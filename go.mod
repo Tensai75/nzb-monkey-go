@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/Tensai75/fslock v0.0.0-20160525022230-4d5c94c67b4b
-	github.com/Tensai75/nntpDirectSearch v0.2.1
+	github.com/Tensai75/nntpDirectSearch v0.2.2
 	github.com/Tensai75/nntpPool v0.1.3
 	github.com/Tensai75/nzbparser v0.1.0
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
