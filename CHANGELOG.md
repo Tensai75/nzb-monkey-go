@@ -1,5 +1,10 @@
 ## Change log
 
+#### v0.3.3
+
+- directsearch: fix: avoid overview reader restart deadlock on simultaneous timeouts during message scan
+- directsearch: fix: handled exact-match case during boundary scan with new withinBoundaryTolerance() function
+
 #### v0.3.2
 
 - easynews: new option to use subject search instead of keyword search (may be more accurate but does not find obfuscated uploads)
