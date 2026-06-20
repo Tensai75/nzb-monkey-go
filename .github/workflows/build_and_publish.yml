@@ -55,6 +55,20 @@ jobs:
           fi
           GOARCH=${{ matrix.os-arch.arch }} GOOS=${{ matrix.os-arch.os }} go build -ldflags="-s -w -X main.appVersion=${{ env.REF_NAME }}" -o builds/${{ matrix.os-arch.name }}/usr/bin/$binary_name
           zip -j "nzb-monkey-go_${{ env.REF_NAME }}-${{ matrix.os-arch.os }}-${{ matrix.os-arch.arch }}.zip" builds/${{ matrix.os-arch.name }}/usr/bin/$binary_name
+          # Additional macOS app bundle package for URI protocol registration
+          if [ "${{ matrix.os-arch.os }}" = "darwin" ]; then
+            app_root="builds/${{ matrix.os-arch.name }}/NZBMonkey.app"
+            contents_dir="${app_root}/Contents"
+            macos_dir="${contents_dir}/MacOS"
+            mkdir -p "$macos_dir"
+            cp "builds/${{ matrix.os-arch.name }}/usr/bin/$binary_name" "${macos_dir}/nzb-monkey-go"
+            chmod 755 "${macos_dir}/nzb-monkey-go"
+            sed "s/VERSION_PLACEHOLDER/${{ env.REF_NAME }}/g" resources/Info.plist.template > "${contents_dir}/Info.plist"
+            (
+              cd "builds/${{ matrix.os-arch.name }}"
+              zip -r "../../nzb-monkey-go_${{ env.REF_NAME }}-darwin-${{ matrix.os-arch.arch }}.app.zip" "NZBMonkey.app"
+            )
+          fi
           # Makeing deb packages for linux and darwin
           if [ "${{ matrix.os-arch.os }}" == "linux"  ] || [ "${{ matrix.os-arch.os }}" == "darwin"  ]; then
             mkdir -p builds/${{ matrix.os-arch.name }}/DEBIAN
