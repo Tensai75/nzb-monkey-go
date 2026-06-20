@@ -29,6 +29,8 @@ bin
 *.yml
 *.zip
 *.log
+.DS_Store
+
 
 # github codespace
 oryxBuildBinary
