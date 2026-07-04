@@ -48,7 +48,9 @@ jobs:
         if: matrix.os-arch.os == 'darwin'
         run: |
           rcodesign_version=0.29.0
+          rcodesign_sha256=dbe85cedd8ee4217b64e9a0e4c2aef92ab8bcaaa41f20bde99781ff02e600002
           curl -sL -o rcodesign.tar.gz "https://github.com/indygreg/apple-platform-rs/releases/download/apple-codesign%2F${rcodesign_version}/apple-codesign-${rcodesign_version}-x86_64-unknown-linux-musl.tar.gz"
+          echo "${rcodesign_sha256}  rcodesign.tar.gz" | sha256sum -c -
           tar xzf rcodesign.tar.gz
           sudo mv "apple-codesign-${rcodesign_version}-x86_64-unknown-linux-musl/rcodesign" /usr/local/bin/rcodesign
           rm -rf rcodesign.tar.gz "apple-codesign-${rcodesign_version}-x86_64-unknown-linux-musl"
