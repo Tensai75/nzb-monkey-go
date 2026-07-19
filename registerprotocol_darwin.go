@@ -19,8 +19,14 @@ func registerProtocol() {
 		exitWithError()
 		return
 	}
-	if _, err := os.Stat(plistPath); os.IsNotExist(err) {
-		exitWithError()
+	if _, err := os.Stat(plistPath); err != nil {
+		if os.IsNotExist(err) {
+			exitWithError()
+			return
+		}
+		Log.Error("Unable to access '%s': %s", plistPath, err.Error())
+		Log.Error("Unable to register 'nzblnk' URL protocol")
+		exit(1)
 		return
 	}
 
