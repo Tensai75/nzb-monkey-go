@@ -8,8 +8,8 @@ import (
 
 func registerProtocol() {
 
-	// Only works when running from inside the distributed NZBMonkey.app bundle.
-	// Expected layout: NZBMonkey.app/Contents/MacOS/nzb-monkey-go
+	// Only works when running from inside the distributed NZBMonkeyGo.app bundle.
+	// Expected layout: NZBMonkeyGo.app/Contents/MacOS/nzb-monkey-go
 	macosDir := filepath.Dir(appExec)
 	contentsDir := filepath.Dir(macosDir)
 	appBundle := filepath.Dir(contentsDir)
@@ -37,9 +37,9 @@ func registerProtocol() {
 }
 
 func exitWithError() {
-	Log.Warn("'--register' requires the NZBMonkey.app bundle from the macOS release zip.")
-	Log.Warn("Download, unzip, and place NZBMonkey.app in /Applications or ~/Applications,")
-	Log.Warn("then run: NZBMonkey.app/Contents/MacOS/nzb-monkey-go --register")
+	Log.Warn("'--register' requires the NZBMonkeyGo.app bundle from the macOS release zip.")
+	Log.Warn("Download, unzip, and place NZBMonkeyGo.app in /Applications or ~/Applications,")
+	Log.Warn("then run: NZBMonkeyGo.app/Contents/MacOS/nzb-monkey-go --register")
 	Log.Error("Unable to register 'nzblnk' URL protocol")
 	exit(1)
 }

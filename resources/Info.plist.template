@@ -3,12 +3,14 @@
 <plist version="1.0">
   <dict>
     <key>CFBundleIdentifier</key>
-    <string>com.github.tensai75.nzbmonkey</string>
+    <string>com.github.tensai75.nzbmonkeygo</string>
     <key>CFBundleName</key>
-    <string>NZBMonkey</string>
+    <string>NZB Monkey Go</string>
     <key>CFBundleDisplayName</key>
-    <string>NZBMonkey</string>
+    <string>NZB Monkey Go</string>
     <key>CFBundleExecutable</key>
+    <string>nzb-monkey-go</string>
+    <key>CFBundleIconFile</key>
     <string>nzb-monkey-go</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>

@@ -68,19 +68,21 @@ jobs:
           zip -j "nzb-monkey-go_${{ env.REF_NAME }}-${{ matrix.os-arch.os }}-${{ matrix.os-arch.arch }}.zip" builds/${{ matrix.os-arch.name }}/usr/bin/$binary_name
           # Additional macOS app bundle package for URI protocol registration
           if [ "${{ matrix.os-arch.os }}" = "darwin" ]; then
-            app_root="builds/${{ matrix.os-arch.name }}/NZBMonkey.app"
+            app_root="builds/${{ matrix.os-arch.name }}/NZBMonkeyGo.app"
             contents_dir="${app_root}/Contents"
             macos_dir="${contents_dir}/MacOS"
-            mkdir -p "$macos_dir"
+            resources_dir="${contents_dir}/Resources"
+            mkdir -p "$macos_dir" "$resources_dir"
             cp "builds/${{ matrix.os-arch.name }}/usr/bin/$binary_name" "${macos_dir}/nzb-monkey-go"
             chmod 755 "${macos_dir}/nzb-monkey-go"
+            cp resources/nzb-monkey-go.icns "${resources_dir}/nzb-monkey-go.icns"
             sed "s/VERSION_PLACEHOLDER/${{ env.REF_NAME }}/g" resources/Info.plist.template > "${contents_dir}/Info.plist"
             # Ad-hoc sign the bundle so macOS assigns it a stable code identity/CFBundleIdentifier
             # binding (required for Tahoe's Local Network TCC prompt, see issue #45).
             rcodesign sign "$app_root"
             (
               cd "builds/${{ matrix.os-arch.name }}"
-              zip -r "../../nzb-monkey-go_${{ env.REF_NAME }}-darwin-${{ matrix.os-arch.arch }}.app.zip" "NZBMonkey.app"
+              zip -r "../../nzb-monkey-go_${{ env.REF_NAME }}-darwin-${{ matrix.os-arch.arch }}.app.zip" "NZBMonkeyGo.app"
             )
           fi
           # Makeing deb packages for linux and darwin
