@@ -44,6 +44,17 @@ jobs:
             ref_name=${{ github.ref_name }}
           fi
           echo "REF_NAME=${ref_name}" >> "$GITHUB_ENV"
+      - name: Install rcodesign
+        if: matrix.os-arch.os == 'darwin'
+        run: |
+          rcodesign_version=0.29.0
+          rcodesign_sha256=dbe85cedd8ee4217b64e9a0e4c2aef92ab8bcaaa41f20bde99781ff02e600002
+          curl -sL -o rcodesign.tar.gz "https://github.com/indygreg/apple-platform-rs/releases/download/apple-codesign%2F${rcodesign_version}/apple-codesign-${rcodesign_version}-x86_64-unknown-linux-musl.tar.gz"
+          echo "${rcodesign_sha256}  rcodesign.tar.gz" | sha256sum -c -
+          tar xzf rcodesign.tar.gz
+          sudo mv "apple-codesign-${rcodesign_version}-x86_64-unknown-linux-musl/rcodesign" /usr/local/bin/rcodesign
+          rm -rf rcodesign.tar.gz "apple-codesign-${rcodesign_version}-x86_64-unknown-linux-musl"
+          rcodesign --version
       - name: Build for ${{ matrix.os-arch.name }}
         run: |
           mkdir -p builds/${{ matrix.os-arch.name }}/usr/bin
@@ -55,6 +66,25 @@ jobs:
           fi
           GOARCH=${{ matrix.os-arch.arch }} GOOS=${{ matrix.os-arch.os }} go build -ldflags="-s -w -X main.appVersion=${{ env.REF_NAME }}" -o builds/${{ matrix.os-arch.name }}/usr/bin/$binary_name
           zip -j "nzb-monkey-go_${{ env.REF_NAME }}-${{ matrix.os-arch.os }}-${{ matrix.os-arch.arch }}.zip" builds/${{ matrix.os-arch.name }}/usr/bin/$binary_name
+          # Additional macOS app bundle package for URI protocol registration
+          if [ "${{ matrix.os-arch.os }}" = "darwin" ]; then
+            app_root="builds/${{ matrix.os-arch.name }}/NZBMonkeyGo.app"
+            contents_dir="${app_root}/Contents"
+            macos_dir="${contents_dir}/MacOS"
+            resources_dir="${contents_dir}/Resources"
+            mkdir -p "$macos_dir" "$resources_dir"
+            cp "builds/${{ matrix.os-arch.name }}/usr/bin/$binary_name" "${macos_dir}/nzb-monkey-go"
+            chmod 755 "${macos_dir}/nzb-monkey-go"
+            cp resources/nzb-monkey-go.icns "${resources_dir}/nzb-monkey-go.icns"
+            sed "s/VERSION_PLACEHOLDER/${{ env.REF_NAME }}/g" resources/Info.plist.template > "${contents_dir}/Info.plist"
+            # Ad-hoc sign the bundle so macOS assigns it a stable code identity/CFBundleIdentifier
+            # binding (required for Tahoe's Local Network TCC prompt, see issue #45).
+            rcodesign sign "$app_root"
+            (
+              cd "builds/${{ matrix.os-arch.name }}"
+              zip -r "../../nzb-monkey-go_${{ env.REF_NAME }}-darwin-${{ matrix.os-arch.arch }}.app.zip" "NZBMonkeyGo.app"
+            )
+          fi
           # Makeing deb packages for linux and darwin
           if [ "${{ matrix.os-arch.os }}" == "linux"  ] || [ "${{ matrix.os-arch.os }}" == "darwin"  ]; then
             mkdir -p builds/${{ matrix.os-arch.name }}/DEBIAN
